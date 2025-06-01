@@ -1,0 +1,6 @@
+# Ignorar pastas node_modules
+backend/node_modules/
+frontend/node_modules/
+
+# Outros arquivos e pastas comuns a serem ignorados (opcional)
+backend/.env

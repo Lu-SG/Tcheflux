@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Login - Tcheflux</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="node_modules/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Seu CSS Personalizado -->
+    <link href="css/style.css" rel="stylesheet">
+</head>
+
+<body>
+   
+   <!-- Navbar Padrão -->
+    <nav class="navbar navbar-expand-lg bg-body-tertiary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="index.html">Tcheflux</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent"
+                aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link" href="index.html">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="sobre.html">Sobre Nós</a>
+                    </li>
+                    <!-- Adicione outros links do navbar aqui, se necessário -->
+                    <li class="nav-item">
+                        <a class="nav-link active" aria-current="page" href="sign_in.html">Login</a>
+                    </li>
+                </ul>
+                <form class="d-flex" role="search">
+                    <input class="form-control me-2" type="search" placeholder="Buscar" aria-label="Buscar" />
+                    <button class="btn btn-outline-success" type="submit">Buscar</button>
+                </form>
+            </div>
+        </div>
+    </nav>
+    <!-- Fim do Navbar Padrão -->
+
+    <!-- Conteúdo Principal da Página de Login -->
+    <!-- A classe 'd-flex align-items-center py-4 bg-body-tertiary' foi removida do body e pode ser aplicada ao main se desejar o fundo cinza e centralização vertical da página inteira -->
+    <!-- Para manter o formulário centralizado como no exemplo original, mas dentro do layout com navbar/footer, aplicamos as classes de centralização ao <main> -->
+    <main class="form-signin w-100 m-auto text-center py-4">
+        <form>
+            <!-- <img class="mb-4" src="caminho/para/seu/logo.svg" alt="" width="72" height="57"> -->
+            <h1 class="h3 mb-3 fw-normal">Por favor, faça o login</h1>
+
+            <div class="form-floating">
+                <input type="email" class="form-control" id="floatingInput" placeholder="nome@exemplo.com">
+                <label for="floatingInput">Endereço de e-mail</label>
+            </div>
+            <div class="form-floating">
+                <input type="password" class="form-control" id="floatingPassword" placeholder="Senha">
+                <label for="floatingPassword">Senha</label>
+            </div>
+
+            <div class="form-check text-start my-3">
+                <input class="form-check-input" type="checkbox" value="remember-me" id="flexCheckDefault">
+                <label class="form-check-label" for="flexCheckDefault">
+                    Lembrar-me
+                </label>
+            </div>
+            <button class="btn btn-primary w-100 py-2" type="submit">Entrar</button>
+            <p class="mt-5 mb-3 text-body-secondary">&copy; Tcheflux 2024–2025</p>
+        </form>
+    </main>
+
+    <!-- Footer Padrão -->
+    <div class="container fixed-bottom"> <!-- Adicionado fixed-bottom para teste, pode remover se não gostar -->
+        <footer class="d-flex flex-wrap justify-content-between align-items-center py-3 my-4 border-top">
+            <div class="col-md-4 d-flex align-items-center">
+                <a href="index.html" class="mb-3 me-2 mb-md-0 text-body-secondary text-decoration-none lh-1" aria-label="Bootstrap">
+                    <svg class="bi" width="30" height="24" aria-hidden="true">
+                        <use xlink:href="#bootstrap"></use> <!-- Nota: Definição do SVG sprite necessária -->
+                    </svg>
+                </a> <!-- Nota: O ano pode ser dinâmico ou atualizado conforme necessário -->
+                <span class="mb-3 mb-md-0 text-body-secondary">&copy; 2024 Tcheflux</span>
+            </div>
+
+            <ul class="nav col-md-4 justify-content-end list-unstyled d-flex">
+                <li class="ms-3"><a class="text-body-secondary" href="#" aria-label="Instagram"><svg class="bi" width="24"
+                            height="24" aria-hidden="true">
+                            <use xlink:href="#instagram"></use> <!-- Nota: Definição do SVG sprite necessária -->
+                        </svg></a></li>
+                <li class="ms-3"><a class="text-body-secondary" href="#" aria-label="Facebook"><svg class="bi" width="24"
+                            height="24" aria-hidden="true">
+                            <use xlink:href="#facebook"></use> <!-- Nota: Definição do SVG sprite necessária -->
+                        </svg></a></li>
+            </ul>
+    </div>
+
+    <!-- Bootstrap Bundle JS (inclui Popper) -->
+    <script src="node_modules/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Seu JavaScript Personalizado -->
+    <script src="js/script.js"></script>
+</body>
+
+</html>
