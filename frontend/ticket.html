@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Novo Ticket - Tcheflux</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="node_modules/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Seu CSS Personalizado -->
+    <link href="css/style.css" rel="stylesheet">
+</head>
+
+<body>
+
+    <!-- Navbar Padrão -->
+    <nav class="navbar navbar-expand-lg bg-body-tertiary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="index.html">Tcheflux</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false"
+                aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link" href="index.html">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="sobre.html">Sobre Nós</a>
+                    </li>
+                    <!-- Adicione outros links do navbar aqui, se necessário -->
+                    <li class="nav-item">
+                        <a class="nav-link" href="sign_in.html">Login</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" aria-current="page" href="ticket.html">Novo Ticket</a>
+                    </li>
+                </ul>
+                <form class="d-flex" role="search">
+                    <input class="form-control me-2" type="search" placeholder="Buscar" aria-label="Buscar" />
+                    <button class="btn btn-outline-success" type="submit">Buscar</button>
+                </form>
+            </div>
+        </div>
+    </nav>
+    <!-- Fim do Navbar Padrão -->
+
+    <!-- Conteúdo Principal da Página -->
+    <main class="container mt-4">
+        <h1>Registrar Novo Ticket</h1>
+        <hr>
+        <form id="formNovoTicket">
+            <div class="mb-3">
+                <label for="clienteNome" class="form-label">Cliente*</label>
+                <input type="text" class="form-control" id="clienteNome" name="cliente_nome" required>
+                <div class="form-text">Empresa ou pessoa para quem o ticket será registrado.</div>
+            </div>
+
+            <div class="mb-3">
+                <label for="solicitanteNome" class="form-label">Solicitante*</label>
+                <input type="text" class="form-control" id="solicitanteNome" name="solicitante_nome" required>
+                <div class="form-text">Quem está solicitando o atendimento.</div>
+            </div>
+
+            <div class="mb-3">
+                <label for="titulo" class="form-label">Título*</label>
+                <input type="text" class="form-control" id="titulo" name="titulo" required>
+            </div>
+
+            <div class="mb-3">
+                <label for="descricao" class="form-label">Descrição*</label>
+                <textarea class="form-control" id="descricao" name="descricao" rows="5" required></textarea>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="prioridade" class="form-label">Prioridade</label>
+                    <select class="form-select" id="prioridade" name="prioridade">
+                        <option value="">Selecione (se aplicável)</option>
+                        <option value="Baixa">Baixa</option>
+                        <option value="Média">Média</option>
+                        <option value="Alta">Alta</option>
+                        <option value="Urgente">Urgente</option>
+                    </select>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="catalogoServico" class="form-label">Catálogo de Serviço</label>
+                    <select class="form-select" id="catalogoServico" name="catalogo_servico_item">
+                        <option value="">Selecione (se aplicável)</option>
+                        <!-- Opções do catálogo seriam populadas aqui, ex: <option value="Instalar Impressora">Instalar Impressora</option> --> */}
+                    </select>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="responsavelNome" class="form-label">Responsável</label>
+                <input type="text" class="form-control" id="responsavelNome" name="responsavel_nome">
+                <div class="form-text">Usuário responsável pelo atendimento (pode ser atribuído depois).</div>
+            </div>
+
+            <div class="mb-3">
+                <label for="seguidores" class="form-label">Seguidores</label>
+                <textarea class="form-control" id="seguidores" name="seguidores" rows="2" placeholder="Ex: email1@dominio.com, email2@dominio.com"></textarea>
+                <div class="form-text">Pessoas que devem receber cópia das comunicações (separar por vírgula).</div>
+            </div>
+
+            
+            <div class="mb-3">
+                <label for="status" class="form-label">Status</label>
+                <select class="form-select" id="status" name="status">
+                    <option value="Aberto" selected>Aberto</option>
+                    <option value="Em Andamento">Em Andamento</option>
+                    <option value="Pendente Cliente">Pendente Cliente</option>
+                    <option value="Resolvido">Resolvido</option>
+                    <option value="Fechado">Fechado</option>
+                </select>
+            </div> 
+
+            <button type="submit" class="btn btn-primary">Registrar Ticket</button>
+            <button type="reset" class="btn btn-secondary">Limpar Formulário</button>
+        </form>
+    </main>
+
+    <!-- Fim do Conteúdo Principal da Página -->
+
+    <div class="container">
+        <footer class="d-flex flex-wrap justify-content-between align-items-center py-3 my-4 border-top">
+            <div class="col-md-4 d-flex align-items-center"> <a href="index.html"
+                    class="mb-3 me-2 mb-md-0 text-body-secondary text-decoration-none lh-1" aria-label="Bootstrap"> <svg
+                        class="bi" width="30" height="24" aria-hidden="true">
+                        <use xlink:href="#bootstrap"></use>
+                    </svg> </a> <span class="mb-3 mb-md-0 text-body-secondary">&copy; 2024 Tcheflux</span> </div>
+            <ul class="nav col-md-4 justify-content-end list-unstyled d-flex">
+                <li class="ms-3"><a class="text-body-secondary" href="#" aria-label="Instagram"><svg class="bi"
+                            width="24" height="24" aria-hidden="true">
+                            <!-- Nota: Para os ícones SVG funcionarem, os símbolos (#bootstrap, #instagram, #facebook) 
+                   precisam estar definidos em um SVG sprite no seu HTML ou em um arquivo SVG linkado. -->
+                            <use xlink:href="#instagram"></use>
+                        </svg></a></li>
+                <li class="ms-3"><a class="text-body-secondary" href="#" aria-label="Facebook"><svg class="bi"
+                            width="24" height="24" aria-hidden="true">
+                            <use xlink:href="#facebook"></use>
+                        </svg></a></li>
+            </ul>
+        </footer>
+    </div>
+    <!-- Bootstrap Bundle JS (inclui Popper) -->
+    <script src="node_modules/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Seu JavaScript Personalizado -->
+    <script src="js/script.js"></script>
+</body>
+
+</html>

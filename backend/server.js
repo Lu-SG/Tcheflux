@@ -1,9 +1,9 @@
 const express = require('express');
 require('dotenv').config(); // Para carregar variáveis de ambiente do .env
-
+   
 // Importar a configuração do banco de dados (opcional aqui, mas útil se você quiser testar a conexão ao iniciar)
-// const pool = require('./db');
-
+   const pool = require('./db'); // Descomente para garantir que a conexão é testada na inicialização
+   
 const app = express();
 
 // Define a porta para o servidor backend
@@ -18,11 +18,11 @@ app.get('/', (req, res) => {
   res.send('Olá Mundo com Express! O backend Tcheflux está no ar!');
 });
 
-// Aqui você adicionará suas outras rotas no futuro
-// Exemplo: const itemRoutes = require('./routes/items');
-// app.use('/api/items', itemRoutes);
+   // Importar e usar as rotas de tickets
+   const ticketRoutes = require('./routes/ticketRoutes');
+   app.use('/api/tickets', ticketRoutes); // Todas as rotas em ticketRoutes serão prefixadas com /api/tickets
 
 app.listen(PORT, () => {
   console.log(`Servidor backend rodando na porta ${PORT}`);
-  // A mensagem de "Conectado ao PostgreSQL com sucesso em:" virá do db.js se ele for importado
+     // A mensagem de "Conectado ao PostgreSQL com sucesso em:" virá do db.js
 });
