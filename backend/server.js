@@ -1,5 +1,6 @@
 const express = require('express');
 require('dotenv').config(); // Para carregar variáveis de ambiente do .env
+    const cors = require('cors'); // Importa o pacote cors
    
 // Importar a configuração do banco de dados (opcional aqui, mas útil se você quiser testar a conexão ao iniciar)
    const pool = require('./db'); // Descomente para garantir que a conexão é testada na inicialização
@@ -10,6 +11,10 @@ const app = express();
 // Tenta usar a variável de ambiente BACKEND_PORT, ou 3000 como padrão
 const PORT = process.env.BACKEND_PORT || 3000;
 
+    // Habilita o CORS para todas as origens (bom para desenvolvimento)
+    // Para produção, você pode querer configurar origens específicas: app.use(cors({ origin: 'http://seu-dominio-frontend.com' }));
+    app.use(cors());
+    
 // Middleware para parsear JSON no corpo das requisições (útil para POST, PUT)
 app.use(express.json());
 
