@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (response.ok) { // Status 200-299
                     const result = await response.json();
                     console.log('Ticket criado com sucesso:', result);
-                    alert(`Ticket #${result.id} criado com sucesso!`);
+                    alert(`Ticket #${result.nro} criado com sucesso!`);
                     formNovoTicket.reset(); // Limpa o formulário
                     // Você pode redirecionar o usuário ou atualizar a UI aqui
                 } else {

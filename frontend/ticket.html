@@ -55,18 +55,6 @@
         <hr>
         <form id="formNovoTicket">
             <div class="mb-3">
-                <label for="clienteNome" class="form-label">Cliente*</label>
-                <input type="text" class="form-control" id="clienteNome" name="cliente_nome" required>
-                <div class="form-text">Empresa ou pessoa para quem o ticket será registrado.</div>
-            </div>
-
-            <div class="mb-3">
-                <label for="solicitanteNome" class="form-label">Solicitante*</label>
-                <input type="text" class="form-control" id="solicitanteNome" name="solicitante_nome" required>
-                <div class="form-text">Quem está solicitando o atendimento.</div>
-            </div>
-
-            <div class="mb-3">
                 <label for="titulo" class="form-label">Título*</label>
                 <input type="text" class="form-control" id="titulo" name="titulo" required>
             </div>
@@ -76,49 +64,21 @@
                 <textarea class="form-control" id="descricao" name="descricao" rows="5" required></textarea>
             </div>
 
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label for="prioridade" class="form-label">Prioridade</label>
-                    <select class="form-select" id="prioridade" name="prioridade">
-                        <option value="">Selecione (se aplicável)</option>
-                        <option value="Baixa">Baixa</option>
-                        <option value="Média">Média</option>
-                        <option value="Alta">Alta</option>
-                        <option value="Urgente">Urgente</option>
-                    </select>
-                </div>
-                <div class="col-md-6 mb-3">
-                    <label for="catalogoServico" class="form-label">Catálogo de Serviço</label>
-                    <select class="form-select" id="catalogoServico" name="catalogo_servico_item">
-                        <option value="">Selecione (se aplicável)</option>
-                        <!-- Opções do catálogo seriam populadas aqui, ex: <option value="Instalar Impressora">Instalar Impressora</option> --> */}
-                    </select>
-                </div>
-            </div>
-
             <div class="mb-3">
-                <label for="responsavelNome" class="form-label">Responsável</label>
-                <input type="text" class="form-control" id="responsavelNome" name="responsavel_nome">
-                <div class="form-text">Usuário responsável pelo atendimento (pode ser atribuído depois).</div>
-            </div>
-
-            <div class="mb-3">
-                <label for="seguidores" class="form-label">Seguidores</label>
-                <textarea class="form-control" id="seguidores" name="seguidores" rows="2" placeholder="Ex: email1@dominio.com, email2@dominio.com"></textarea>
-                <div class="form-text">Pessoas que devem receber cópia das comunicações (separar por vírgula).</div>
-            </div>
-
-            
-            <div class="mb-3">
-                <label for="status" class="form-label">Status</label>
-                <select class="form-select" id="status" name="status">
-                    <option value="Aberto" selected>Aberto</option>
-                    <option value="Em Andamento">Em Andamento</option>
-                    <option value="Pendente Cliente">Pendente Cliente</option>
-                    <option value="Resolvido">Resolvido</option>
-                    <option value="Fechado">Fechado</option>
+                <label for="departamentoArea" class="form-label">Departamento de Destino*</label>
+                <select class="form-select" id="departamentoArea" name="departamento_area" required>
+                    <option value="">Selecione o departamento</option>
+                    <option value="RH">RH (Recursos Humanos)</option>
+                    <option value="FN">FN (Financeiro)</option>
+                    <option value="MKT">MKT (Marketing)</option>
+                    <option value="OP">OP (Operações)</option>
+                    <option value="TI">TI (Tecnologia da Informação)</option>
                 </select>
-            </div> 
+            </div>
+
+            <div class="row">
+                <!-- Campos "Prioridade" e "Catálogo de Serviço" foram removidos daqui -->
+            </div>
 
             <button type="submit" class="btn btn-primary">Registrar Ticket</button>
             <button type="reset" class="btn btn-secondary">Limpar Formulário</button>
