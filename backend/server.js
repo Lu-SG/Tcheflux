@@ -27,6 +27,10 @@ app.get('/', (req, res) => {
    const ticketRoutes = require('./routes/ticketRoutes');
    app.use('/api/tickets', ticketRoutes); // Todas as rotas em ticketRoutes serão prefixadas com /api/tickets
 
+   // Importar e usar as rotas de autenticação
+   const authRoutes = require('./routes/authRoutes');
+   app.use('/api/auth', authRoutes); // Rotas como /api/auth/login
+
 app.listen(PORT, () => {
   console.log(`Servidor backend rodando na porta ${PORT}`);
      // A mensagem de "Conectado ao PostgreSQL com sucesso em:" virá do db.js
