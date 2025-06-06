@@ -31,7 +31,12 @@ app.get('/', (req, res) => {
    const authRoutes = require('./routes/authRoutes');
    app.use('/api/auth', authRoutes); // Rotas como /api/auth/login
 
-app.listen(PORT, () => {
-  console.log(`Servidor backend rodando na porta ${PORT}`);
-     // A mensagem de "Conectado ao PostgreSQL com sucesso em:" virá do db.js
-});
+// Só inicia o servidor se este arquivo for executado diretamente
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`Servidor backend rodando na porta ${PORT}`);
+    // A mensagem de "Conectado ao PostgreSQL com sucesso em:" virá do db.js
+  });
+}
+
+module.exports = app; // Exporta o app para ser usado nos testes

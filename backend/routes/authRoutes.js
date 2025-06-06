@@ -4,6 +4,21 @@ const pool = require('../db');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
+// Importar a função findOrCreateDepartamento (ou movê-la para um helper compartilhado)
+// Por simplicidade, vamos redefinir uma versão aqui ou importar se você a modularizou.
+// Assumindo que findOrCreateDepartamento está em ticketRoutes.js e não foi exportada,
+// vamos criar uma versão simplificada ou você pode refatorar para compartilhar.
+async function findOrCreateDepartamento(areaNome) {
+    if (!areaNome) throw new Error('Nome da área do departamento é obrigatório.');
+    let deptoResult = await pool.query('SELECT coddepto FROM departamento WHERE areas = $1', [areaNome]);
+    if (deptoResult.rows.length > 0) {
+        return deptoResult.rows[0].coddepto;
+    } else {
+        const newDeptoResult = await pool.query('INSERT INTO departamento (areas) VALUES ($1) RETURNING coddepto', [areaNome]);
+        return newDeptoResult.rows[0].coddepto;
+    }
+}
+
 const JWT_SECRET = process.env.JWT_SECRET || 'seuSegredoSuperSecretoParaJWT'; // Mova para .env em produção!
 
 // Rota de Login (POST /api/auth/login)
@@ -62,6 +77,61 @@ router.post('/login', async (req, res) => {
     } catch (err) {
         console.error('Erro no login:', err.message);
         res.status(500).json({ error: 'Erro interno do servidor.' });
+    }
+});
+
+// Rota de Registro de Usuário (POST /api/auth/register)
+router.post('/register', async (req, res) => {
+    const { nomeCompleto, telefone, email, senha, tipo, departamento_area } = req.body;
+
+    // Validação básica
+    if (!nomeCompleto || !telefone || !email || !senha || !tipo) {
+        return res.status(400).json({ error: 'Todos os campos obrigatórios devem ser preenchidos (Nome, Telefone, Email, Senha, Tipo).' });
+    }
+
+    if (tipo === 'Atendente' && !departamento_area) {
+        return res.status(400).json({ error: 'Atendentes devem selecionar um departamento.' });
+    }
+
+    try {
+        // Verificar se o usuário já existe pelo email
+        const userExists = await pool.query('SELECT * FROM usuario WHERE email = $1', [email]);
+        if (userExists.rows.length > 0) {
+            return res.status(400).json({ error: 'Usuário com este email já existe.' });
+        }
+
+        // Hash da senha
+        const salt = await bcrypt.genSalt(10);
+        const senhaHash = await bcrypt.hash(senha, salt);
+
+        let codDeptoParaSalvar = null;
+        if (tipo === 'Atendente') {
+            codDeptoParaSalvar = await findOrCreateDepartamento(departamento_area);
+        }
+
+        // Inserir usuário no banco
+        const newUser = await pool.query(
+            `INSERT INTO usuario (nomecompleto, telefone, email, senhahash, tipo, coddepto)
+             VALUES ($1, $2, $3, $4, $5, $6)
+             RETURNING idusuario, nomecompleto, email, tipo`,
+            [nomeCompleto, telefone, email, senhaHash, tipo, codDeptoParaSalvar]
+        );
+
+        res.status(201).json({
+            message: 'Usuário registrado com sucesso!',
+            usuario: newUser.rows[0]
+        });
+
+    } catch (err) {
+        console.error('Erro no registro:', err);
+        // Tratar erro de constraint do banco (ex: chk_tipo_depto se a lógica falhar)
+        if (err.code === '23514') { // Código para check_violation
+             return res.status(400).json({ error: 'Violação de regra de negócio. Verifique o tipo de usuário e departamento.', details: err.detail });
+        }
+        if (err.code === '23505' && err.constraint === 'usuario_email_key') { // violação de unique constraint no email
+            return res.status(400).json({ error: 'Usuário com este email já existe.' });
+        }
+        res.status(500).json({ error: 'Erro interno do servidor ao tentar registrar o usuário.' });
     }
 });
 

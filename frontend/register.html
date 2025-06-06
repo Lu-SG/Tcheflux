@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Cadastro de Usuário - Tcheflux</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="node_modules/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Seu CSS Personalizado -->
+    <link href="css/style.css" rel="stylesheet">
+    <style>
+        body, html {
+            height: 100%;
+        }
+        .register-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding-top: 2rem;
+            padding-bottom: 2rem;
+        }
+        .register-form {
+            width: 100%;
+            max-width: 500px; /* Aumentado para acomodar mais campos */
+            padding: 15px;
+            margin: auto;
+        }
+        /* Para esconder o campo de departamento inicialmente */
+        #campoDepartamento {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Navbar Padrão -->
+    <nav class="navbar navbar-expand-lg bg-body-tertiary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="index.html">Tcheflux</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false"
+                aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link" href="index.html">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="sobre.html">Sobre Nós</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="sign_in.html">Login</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="ticket.html">Novo Ticket</a>
+                    </li>
+                    <!-- Adicionar link para registro -->
+                </ul>
+            </div>
+        </div>
+    </nav>
+    <!-- Fim do Navbar Padrão -->
+
+    <!-- Conteúdo Principal da Página -->
+    <main class="register-container">
+        <div class="register-form text-center">
+            <form id="formRegister">
+                <img class="mb-4" src="img/imagem.jpg" alt="Logo Tcheflux" width="180" height="auto">
+                <h1 class="h3 mb-3 fw-normal">Cadastro de Novo Usuário</h1>
+
+                <div class="form-floating mb-3">
+                    <input type="text" class="form-control" id="nomeCompleto" name="nomeCompleto" placeholder="Nome Completo" required>
+                    <label for="nomeCompleto">Nome Completo</label>
+                </div>
+                <div class="form-floating mb-3">
+                    <input type="tel" class="form-control" id="telefone" name="telefone" placeholder="(XX) XXXXX-XXXX" required>
+                    <label for="telefone">Telefone</label>
+                </div>
+                <div class="form-floating mb-3">
+                    <input type="email" class="form-control" id="email" name="email" placeholder="nome@exemplo.com" required>
+                    <label for="email">Endereço de e-mail</label>
+                </div>
+                <div class="form-floating mb-3">
+                    <input type="password" class="form-control" id="senha" name="senha" placeholder="Senha" required>
+                    <label for="senha">Senha</label>
+                </div>
+                 <div class="form-floating mb-3">
+                    <select class="form-select" id="tipoUsuario" name="tipo" required>
+                        <option value="">Selecione o tipo de usuário</option>
+                        <option value="Solicitante">Solicitante</option>
+                        <option value="Atendente">Atendente</option>
+                    </select>
+                    <label for="tipoUsuario">Tipo de Usuário</label>
+                </div>
+                <div class="form-floating mb-3" id="campoDepartamento">
+                    <select class="form-select" id="departamentoArea" name="departamento_area">
+                        <option value="">Selecione o departamento</option>
+                        <option value="RH">RH (Recursos Humanos)</option>
+                        <option value="FN">FN (Financeiro)</option>
+                        <option value="MKT">MKT (Marketing)</option>
+                        <option value="OP">OP (Operações)</option>
+                        <option value="TI">TI (Tecnologia da Informação)</option>
+                    </select>
+                    <label for="departamentoArea">Departamento (para Atendentes)</label>
+                </div>
+
+                <button class="w-100 btn btn-lg btn-primary" type="submit" id="btnRegister">Registrar</button>
+                <p class="mt-3">Já tem uma conta? <a href="sign_in.html">Faça login</a></p>
+                <p class="mt-5 mb-3 text-body-secondary">&copy; 2024 Tcheflux</p>
+            </form>
+        </div>
+    </main>
+    <!-- Fim do Conteúdo Principal da Página -->
+
+    <!-- Bootstrap Bundle JS (inclui Popper) -->
+    <script src="node_modules/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Seu JavaScript Personalizado -->
+    <script src="js/script.js"></script>
+</body>
+</html>
