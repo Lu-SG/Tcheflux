@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db');
+const authMiddleware = require('../middleware/authMiddleware'); // Importar o middleware
 
 // Função auxiliar para encontrar ou criar um Departamento
 async function findOrCreateDepartamento(areaNome) {
@@ -20,47 +21,8 @@ async function findOrCreateDepartamento(areaNome) {
     }
 }
 
-// Função auxiliar para encontrar ou criar um Usuário
-async function findOrCreateUsuario(nomeCompleto, tipoUsuario, emailIn, telefoneIn, senhaHashIn, codDeptoAtendente = null) {
-    if (!nomeCompleto || !tipoUsuario) {
-        // Este erro deve ser pego antes, pela lógica da rota.
-        throw new Error('Nome completo e tipo do usuário são obrigatórios para findOrCreateUsuario.');
-    }
-
-    // Usar e-mail como um identificador mais forte para encontrar o usuário, se disponível
-    // Para este fluxo, o email será um placeholder.
-    let userResult = await pool.query(
-        'SELECT idusuario FROM usuario WHERE email = $1 AND tipo = $2',
-        [emailIn, tipoUsuario]
-    );
-
-    if (userResult.rows.length > 0) {
-        return userResult.rows[0].idusuario;
-    } else {
-        // Usuário não encontrado, criar novo
-        if (tipoUsuario === 'Atendente' && !codDeptoAtendente) {
-            // A constraint chk_tipo_depto no DB também pegaria isso, mas é bom validar antes.
-            throw new Error('Atendentes devem ser associados a um departamento na criação.');
-        }
-
-        const newUserResult = await pool.query(
-            `INSERT INTO usuario (nomecompleto, telefone, email, senhahash, tipo, coddepto)
-             VALUES ($1, $2, $3, $4, $5, $6) RETURNING idusuario`,
-            [
-                nomeCompleto,
-                telefoneIn,
-                emailIn,
-                senhaHashIn, // Em produção, use bcrypt.hashSync ou similar
-                tipoUsuario,
-                tipoUsuario === 'Atendente' ? codDeptoAtendente : null,
-            ]
-        );
-        return newUserResult.rows[0].idusuario;
-    }
-}
-
 // Rota para CRIAR um novo ticket (POST /api/tickets)
-router.post('/', async (req, res) => {
+router.post('/', authMiddleware, async (req, res) => { // Aplicar o middleware aqui
     const {
         titulo,
         descricao,
@@ -77,23 +39,14 @@ router.post('/', async (req, res) => {
     try {
         // 1. Obter/Criar o Departamento
         const codDeptoTicket = await findOrCreateDepartamento(departamento_area);
+        
+        // 2. Obter o idSolicitante do usuário autenticado (adicionado ao req pelo authMiddleware)
+        const idSolicitante = req.usuario.id; 
 
-        // 2. Obter/Criar o Solicitante Padrão
-        //    Em um sistema real com autenticação, o idSolicitante viria do usuário logado.
-        //    Para este MVP, criamos/buscamos um usuário "Solicitante Padrão".
-        const nomeSolicitantePadrao = 'Solicitante Padrão do Sistema';
-        const emailSolicitantePadrao = 'solicitante.padrao@tcheflux.example.com';
-        const telefoneSolicitantePadrao = '00000000000';
-        const senhaHashSolicitantePadrao = 'senha_padrao_hash_placeholder'; // NÃO FAÇA ISSO EM PRODUÇÃO
-
-        const idSolicitante = await findOrCreateUsuario(
-            nomeSolicitantePadrao,
-            'Solicitante',
-            emailSolicitantePadrao,
-            telefoneSolicitantePadrao,
-            senhaHashSolicitantePadrao
-        );
-
+        // Validar se o idSolicitante foi obtido
+        if (!idSolicitante) {
+            return res.status(401).json({ error: 'Não foi possível identificar o solicitante. Faça login novamente.' });
+        }
         // 3. Inserir o Ticket
         // O status será 'Aberto' por default (definido no DB)
         // O idAtendente será NULL por enquanto

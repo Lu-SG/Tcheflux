@@ -23,10 +23,18 @@ document.addEventListener('DOMContentLoaded', () => {
             submitButton.textContent = 'Enviando...';
 
             try {
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    alert('Você não está logado. Por favor, faça login para criar um ticket.');
+                    window.location.href = 'sign_in.html'; // Redireciona para login
+                    return; // Interrompe a execução
+                }
+
                 const response = await fetch('http://localhost:3001/api/tickets', { // Certifique-se que a URL e porta estão corretas
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}` // Adiciona o token JWT ao header
                     },
                     body: JSON.stringify(ticketData),
                 });
@@ -38,6 +46,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     formNovoTicket.reset(); // Limpa o formulário
                     // Você pode redirecionar o usuário ou atualizar a UI aqui
                 } else {
+                    if (response.status === 401) { // Token inválido ou não autorizado
+                        alert('Sua sessão expirou ou é inválida. Por favor, faça login novamente.');
+                        localStorage.removeItem('token'); // Limpa token inválido
+                        localStorage.removeItem('usuario');
+                        window.location.href = 'sign_in.html';
+                        return;
+                    }
                     // Tenta pegar a mensagem de erro do backend
                     const errorResult = await response.json().catch(() => null); // Evita erro se o corpo não for JSON
                     const errorMessage = errorResult && errorResult.error
