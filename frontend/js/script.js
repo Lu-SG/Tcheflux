@@ -57,6 +57,55 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Outros scripts do frontend podem vir aqui
-    // Ex: Lógica para a página de login, etc.
+    const formLogin = document.getElementById('formLogin');
+
+    if (formLogin) {
+        formLogin.addEventListener('submit', async (event) => {
+            event.preventDefault();
+
+            const email = document.getElementById('email').value;
+            const senha = document.getElementById('senha').value;
+            const btnLogin = document.getElementById('btnLogin');
+            const originalButtonText = btnLogin.textContent;
+
+            btnLogin.disabled = true;
+            btnLogin.textContent = 'Entrando...';
+
+            try {
+                const response = await fetch('http://localhost:3001/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email, senha }),
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    console.log('Login bem-sucedido:', data);
+                    // Armazenar o token e informações do usuário
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('usuario', JSON.stringify(data.usuario));
+
+                    alert(`Login bem-sucedido! Bem-vindo, ${data.usuario.nome}!`);
+                    // Redirecionar para a página principal ou dashboard
+                    window.location.href = 'index.html';
+                } else {
+                    console.error('Erro no login:', data.error);
+                    alert(`Erro no login: ${data.error || 'Verifique suas credenciais.'}`);
+                }
+            } catch (error) {
+                console.error('Erro de rede ou ao processar o login:', error);
+                alert('Erro de conexão ao tentar fazer login. Verifique o console.');
+            } finally {
+                btnLogin.disabled = false;
+                btnLogin.textContent = originalButtonText;
+            }
+        });
+    }
+
+    // TODO: Adicionar lógica para verificar se o usuário já está logado ao carregar as páginas
+    // TODO: Adicionar funcionalidade de Logout
+    // TODO: Proteger rotas/páginas que exigem login
 });
