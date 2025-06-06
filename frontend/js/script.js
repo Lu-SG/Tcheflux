@@ -120,7 +120,82 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // TODO: Adicionar lógica para verificar se o usuário já está logado ao carregar as páginas
-    // TODO: Adicionar funcionalidade de Logout
-    // TODO: Proteger rotas/páginas que exigem login
+    // --- Lógica de Registro de Usuário ---
+    const formRegister = document.getElementById('formRegister');
+    const tipoUsuarioSelect = document.getElementById('tipoUsuario');
+    const campoDepartamentoDiv = document.getElementById('campoDepartamento');
+    const departamentoAreaSelect = document.getElementById('departamentoArea');
+
+    if (tipoUsuarioSelect && campoDepartamentoDiv) {
+        tipoUsuarioSelect.addEventListener('change', function() {
+            if (this.value === 'Atendente') {
+                campoDepartamentoDiv.style.display = 'block';
+                departamentoAreaSelect.required = true;
+            } else {
+                campoDepartamentoDiv.style.display = 'none';
+                departamentoAreaSelect.required = false;
+                departamentoAreaSelect.value = ''; // Limpa a seleção se não for Atendente
+            }
+        });
+    }
+
+    if (formRegister) {
+        formRegister.addEventListener('submit', async (event) => {
+            // console.log('formRegister: Evento de submit capturado.'); 
+            event.preventDefault();
+            // console.log('formRegister: event.preventDefault() chamado.');
+
+            const formData = new FormData(formRegister);
+            const userData = {};
+            formData.forEach((value, key) => {
+                userData[key] = value;
+            });
+
+            if (userData.tipo !== 'Atendente') {
+                delete userData.departamento_area;
+            }
+
+            const btnRegister = document.getElementById('btnRegister');
+            const originalButtonText = btnRegister.textContent;
+            btnRegister.disabled = true;
+            btnRegister.textContent = 'Registrando...';
+
+            try {
+                const response = await fetch('http://localhost:3001/api/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(userData)
+                });
+                const data = await response.json();
+
+                if (response.ok) {
+                    alert('Usuário registrado com sucesso! Faça login para continuar.');
+                    window.location.href = 'sign_in.html';
+                } else {
+                    alert(`Erro no registro: ${data.error || 'Ocorreu um problema.'}`);
+                }
+            } catch (error) {
+                console.error('Erro de rede ou ao processar o registro:', error);
+                alert('Erro de conexão ao tentar registrar. Verifique o console.');
+            } finally {
+                btnRegister.disabled = false;
+                btnRegister.textContent = originalButtonText;
+            }
+        });
+    }
+
+    // --- Funções de Proteção de Página ---
+    function protegerPaginaTicket() {
+        // Verifica se estamos na página ticket.html e se o usuário não está logado
+        if (window.location.pathname.endsWith('ticket.html')) {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                alert('Você precisa estar logado para acessar esta página.');
+                window.location.href = 'sign_in.html';
+            }
+        }
+    }
+
+    // Executar ao carregar a página
+    protegerPaginaTicket(); // Protege a página de tickets se necessário
 });

@@ -4,21 +4,6 @@ const pool = require('../db');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
-// Importar a função findOrCreateDepartamento (ou movê-la para um helper compartilhado)
-// Por simplicidade, vamos redefinir uma versão aqui ou importar se você a modularizou.
-// Assumindo que findOrCreateDepartamento está em ticketRoutes.js e não foi exportada,
-// vamos criar uma versão simplificada ou você pode refatorar para compartilhar.
-async function findOrCreateDepartamento(areaNome) {
-    if (!areaNome) throw new Error('Nome da área do departamento é obrigatório.');
-    let deptoResult = await pool.query('SELECT coddepto FROM departamento WHERE areas = $1', [areaNome]);
-    if (deptoResult.rows.length > 0) {
-        return deptoResult.rows[0].coddepto;
-    } else {
-        const newDeptoResult = await pool.query('INSERT INTO departamento (areas) VALUES ($1) RETURNING coddepto', [areaNome]);
-        return newDeptoResult.rows[0].coddepto;
-    }
-}
-
 const JWT_SECRET = process.env.JWT_SECRET || 'seuSegredoSuperSecretoParaJWT'; // Mova para .env em produção!
 
 // Rota de Login (POST /api/auth/login)
@@ -106,7 +91,14 @@ router.post('/register', async (req, res) => {
 
         let codDeptoParaSalvar = null;
         if (tipo === 'Atendente') {
-            codDeptoParaSalvar = await findOrCreateDepartamento(departamento_area);
+            // Buscar o coddepto com base na area fornecida
+            const deptoResult = await pool.query('SELECT coddepto FROM departamento WHERE areas = $1', [departamento_area]);
+            if (deptoResult.rows.length === 0) {
+                return res.status(400).json({ error: `Departamento '${departamento_area}' não encontrado. Selecione um departamento válido.` });
+            }
+            codDeptoParaSalvar = deptoResult.rows[0].coddepto;
+        } else if (departamento_area) {
+            return res.status(400).json({ error: 'Campo departamento só é permitido para usuários do tipo Atendente.' });
         }
 
         // Inserir usuário no banco
