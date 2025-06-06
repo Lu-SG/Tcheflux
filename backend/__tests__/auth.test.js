@@ -82,6 +82,79 @@ describe('Rotas de Autenticação API', () => {
         });
     });
 
-    // TODO: Adicionar testes para a rota de login /api/auth/login
+    // Testes para a rota de login de usuário
+    describe('POST /api/auth/login', () => {
+        const testUserCredentials = {
+            nomeCompleto: 'Usuário Login Teste',
+            telefone: '11900000000',
+            email: 'login.teste@example.com',
+            senha: 'senhaParaLogin123',
+            tipo: 'Solicitante'
+        };
+
+        // Registrar um usuário antes de testar o login
+        beforeAll(async () => {
+            // Limpar novamente para garantir que o usuário de teste de login não entre em conflito com os de registro
+            // ou que não haja usuários de testes anteriores.
+            await pool.query('DELETE FROM ticket'); 
+            await pool.query('DELETE FROM usuario WHERE email = $1', [testUserCredentials.email]); // Limpa especificamente este usuário se existir
+            
+            // Registrar o usuário que será usado para os testes de login
+            await request(app)
+                .post('/api/auth/register')
+                .send(testUserCredentials);
+        });
+
+        it('deve logar um usuário com credenciais válidas e retornar um token JWT', async () => {
+            const res = await request(app)
+                .post('/api/auth/login')
+                .send({
+                    email: testUserCredentials.email,
+                    senha: testUserCredentials.senha
+                });
+
+            expect(res.statusCode).toEqual(200);
+            expect(res.body).toHaveProperty('token');
+            expect(res.body).toHaveProperty('usuario');
+            expect(res.body.usuario).toHaveProperty('email', testUserCredentials.email);
+            expect(res.body.usuario).toHaveProperty('nome', testUserCredentials.nomeCompleto);
+        });
+
+        it('deve retornar erro 401 para senha incorreta', async () => {
+            const res = await request(app)
+                .post('/api/auth/login')
+                .send({
+                    email: testUserCredentials.email,
+                    senha: 'senhaErrada123'
+                });
+
+            expect(res.statusCode).toEqual(401);
+            expect(res.body).toHaveProperty('error', 'Credenciais inválidas. Senha incorreta.');
+        });
+
+        it('deve retornar erro 401 para usuário não encontrado', async () => {
+            const res = await request(app)
+                .post('/api/auth/login')
+                .send({
+                    email: 'naoexiste@example.com',
+                    senha: 'qualquerSenha'
+                });
+
+            expect(res.statusCode).toEqual(401);
+            expect(res.body).toHaveProperty('error', 'Credenciais inválidas. Usuário não encontrado.');
+        });
+
+        it('deve retornar erro 400 se o email estiver faltando', async () => {
+            const res = await request(app)
+                .post('/api/auth/login')
+                .send({
+                    senha: testUserCredentials.senha
+                });
+            
+            expect(res.statusCode).toEqual(400);
+            expect(res.body).toHaveProperty('error', 'Email e senha são obrigatórios.');
+        });
+    });
+
     // TODO: Adicionar testes para a rota de criação de tickets /api/tickets
 });
