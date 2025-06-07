@@ -206,8 +206,18 @@ document.addEventListener('DOMContentLoaded', () => {
                      localStorage.removeItem('token');
                      localStorage.removeItem('usuario');
                 } else {
-                    const errData = await response.json();
-                    throw new Error(errData.error || `Erro ${response.status}`);
+                    let errorMessageFromServer = `Erro ${response.status}: ${response.statusText}`;
+                    try {
+                        // Tenta ler o corpo da resposta como texto primeiro
+                        const errorText = await response.text();
+                        // Tenta analisar o texto como JSON
+                        const errData = JSON.parse(errorText);
+                        errorMessageFromServer = errData.error || errorMessageFromServer;
+                    } catch (e) {
+                        // Se falhar ao analisar como JSON, o erro original (status + statusText) já é um bom fallback.
+                        console.warn("Não foi possível analisar a resposta de erro como JSON. Status:", response.status, response.statusText);
+                    }
+                    throw new Error(errorMessageFromServer);
                 }
                 return;
             }
@@ -218,18 +228,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            let tableHtml = '<table class="table table-striped table-hover"><thead><tr><th>Nº</th><th>Título</th><th>Status</th><th>Departamento</th><th>Data Abertura</th></tr></thead><tbody>';
+            let listHtml = '';
             tickets.forEach(ticket => {
-                tableHtml += `<tr>
-                    <td>${ticket.nro}</td>
-                    <td>${ticket.titulo}</td>
-                    <td>${ticket.status}</td>
-                    <td>${ticket.departamento_area}</td>
-                    <td>${new Date(ticket.datainicio).toLocaleString('pt-BR')}</td>
-                </tr>`;
+                listHtml += `
+                    <ul class="list-group list-group-horizontal-md mb-2">
+                        <li class="list-group-item flex-fill"><strong>Nº:</strong> ${ticket.nro}</li>
+                        <li class="list-group-item flex-fill w-25"><strong>Título:</strong> ${ticket.titulo}</li>
+                        <li class="list-group-item flex-fill"><strong>Status:</strong> ${ticket.status}</li>
+                        <li class="list-group-item flex-fill"><strong>Depto:</strong> ${ticket.departamento_area}</li>
+                        <li class="list-group-item flex-fill"><strong>Data:</strong> ${new Date(ticket.datainicio).toLocaleString('pt-BR')}</li>
+                    </ul>
+                `;
             });
-            tableHtml += '</tbody></table>';
-            container.innerHTML = tableHtml;
+            container.innerHTML = listHtml;
+
 
         } catch (error) {
             console.error('Erro ao carregar meus tickets:', error);
@@ -265,8 +277,17 @@ document.addEventListener('DOMContentLoaded', () => {
                      localStorage.removeItem('token');
                      localStorage.removeItem('usuario');
                 } else {
-                    const errData = await response.json();
-                    throw new Error(errData.error || `Erro ${response.status}`);
+                    let errorMessageFromServer = `Erro ${response.status}: ${response.statusText}`;
+                    try {
+                        // Tenta ler o corpo da resposta como texto primeiro
+                        const errorText = await response.text();
+                        // Tenta analisar o texto como JSON
+                        const errData = JSON.parse(errorText);
+                        errorMessageFromServer = errData.error || errorMessageFromServer;
+                    } catch (e) {
+                        console.warn("Não foi possível analisar a resposta de erro do departamento como JSON. Status:", response.status, response.statusText);
+                    }
+                    throw new Error(errorMessageFromServer);
                 }
                 return;
             }
@@ -278,19 +299,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 container.innerHTML = '<p>Não há tickets para este departamento no momento.</p>';
                 return;
             }
-            let tableHtml = '<table class="table table-striped table-hover"><thead><tr><th>Nº</th><th>Título</th><th>Status</th><th>Solicitante</th><th>Data Abertura</th></tr></thead><tbody>';
+            let listHtml = '';
             tickets.forEach(ticket => {
-                tableHtml += `<tr>
-                    <td>${ticket.nro}</td>
-                    <td>${ticket.titulo}</td>
-                    <td>${ticket.status}</td>
-                    <td>${ticket.solicitante_nome}</td>
-                    <td>${new Date(ticket.datainicio).toLocaleString('pt-BR')}</td>
-                </tr>`;
+                listHtml += `
+                    <ul class="list-group list-group-horizontal-md mb-2">
+                        <li class="list-group-item flex-fill"><strong>Nº:</strong> ${ticket.nro}</li>
+                        <li class="list-group-item flex-fill w-25"><strong>Título:</strong> ${ticket.titulo}</li>
+                        <li class="list-group-item flex-fill"><strong>Status:</strong> ${ticket.status}</li>
+                        <li class="list-group-item flex-fill"><strong>Solic.:</strong> ${ticket.solicitante_nome}</li>
+                        <li class="list-group-item flex-fill"><strong>Data:</strong> ${new Date(ticket.datainicio).toLocaleString('pt-BR')}</li>
+                    </ul>
+                `;
             });
-            tableHtml += '</tbody></table>';
-            container.innerHTML = tableHtml;
-
+            container.innerHTML = listHtml;
         } catch (error) {
             console.error('Erro ao carregar tickets do departamento:', error);
             container.innerHTML = `<p class="text-danger">Erro ao carregar tickets do departamento: ${error.message}</p>`;
