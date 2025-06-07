@@ -156,5 +156,89 @@ describe('Rotas de Autenticação API', () => {
         });
     });
 
-    // TODO: Adicionar testes para a rota de criação de tickets /api/tickets
+    // Testes para a rota de criação de tickets
+    describe('POST /api/tickets', () => {
+        let authToken;
+        let solicitanteId;
+
+        const ticketUserCredentials = {
+            nomeCompleto: 'Usuário Criador de Ticket',
+            telefone: '11911112222',
+            email: 'ticket.creator@example.com',
+            senha: 'senhaParaTicket123',
+            tipo: 'Solicitante'
+        };
+
+        beforeAll(async () => {
+            // Limpar usuário específico se existir e registrar um novo para os testes de ticket
+            await pool.query('DELETE FROM ticket'); // Limpa tickets para evitar interferência
+            await pool.query('DELETE FROM usuario WHERE email = $1', [ticketUserCredentials.email]);
+            
+            const registerRes = await request(app)
+                .post('/api/auth/register')
+                .send(ticketUserCredentials);
+            solicitanteId = registerRes.body.usuario.idusuario; // Captura o ID do usuário registrado
+
+            // Logar para obter o token
+            const loginRes = await request(app)
+                .post('/api/auth/login')
+                .send({
+                    email: ticketUserCredentials.email,
+                    senha: ticketUserCredentials.senha
+                });
+            authToken = loginRes.body.token;
+        });
+
+        it('deve criar um novo ticket com sucesso com um token válido', async () => {
+            const novoTicketData = {
+                titulo: 'Problema com Impressora X',
+                descricao: 'A impressora modelo X não está imprimindo documentos coloridos.',
+                departamento_area: 'TI' // Departamento existente ou a ser criado
+            };
+
+            const res = await request(app)
+                .post('/api/tickets')
+                .set('Authorization', `Bearer ${authToken}`)
+                .send(novoTicketData);
+
+            expect(res.statusCode).toEqual(201);
+            expect(res.body).toHaveProperty('nro');
+            expect(res.body).toHaveProperty('titulo', novoTicketData.titulo);
+            expect(res.body).toHaveProperty('descricao', novoTicketData.descricao);
+            expect(res.body).toHaveProperty('status', 'Aberto');
+            expect(res.body).toHaveProperty('idsolicitante', solicitanteId);
+            // Poderíamos verificar o coddepto se soubéssemos qual seria criado/encontrado
+        });
+
+        it('deve retornar erro 401 se nenhum token for fornecido', async () => {
+            const novoTicketData = {
+                titulo: 'Ticket sem Token',
+                descricao: 'Este ticket não deve ser criado.',
+                departamento_area: 'RH'
+            };
+            const res = await request(app)
+                .post('/api/tickets')
+                .send(novoTicketData); // Sem header de autorização
+
+            expect(res.statusCode).toEqual(401);
+            expect(res.body).toHaveProperty('msg', 'Nenhum token, autorização negada.');
+        });
+
+        it('deve retornar erro 400 se campos obrigatórios estiverem faltando', async () => {
+            const ticketIncompleto = {
+                titulo: 'Ticket Incompleto'
+                // descrição e departamento_area faltando
+            };
+
+            const res = await request(app)
+                .post('/api/tickets')
+                .set('Authorization', `Bearer ${authToken}`)
+                .send(ticketIncompleto);
+
+            expect(res.statusCode).toEqual(400);
+            expect(res.body).toHaveProperty('error', 'Campos obrigatórios (Título, Descrição, Departamento de Destino) não foram preenchidos.');
+        });
+
+        // Você pode adicionar mais testes, como token mal formatado, etc.
+    });
 });
