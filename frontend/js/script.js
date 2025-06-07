@@ -331,6 +331,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
+    function handleLogoff() {
+        localStorage.removeItem('token');
+        localStorage.removeItem('usuario');
+        alert('Você foi desconectado.'); // Mensagem opcional
+        window.location.href = 'sign_in.html';
+        // A página será recarregada ao redirecionar, então atualizarNavbar() será chamada automaticamente no carregamento da nova página.
+    }
+
     function atualizarNavbar() {
         const token = localStorage.getItem('token');
         const usuarioString = localStorage.getItem('usuario');
@@ -340,21 +348,41 @@ document.addEventListener('DOMContentLoaded', () => {
             // Links que são sempre manipulados (visibilidade)
             const loginLink = navbarNav.querySelector('a[href="sign_in.html"]');
             const registerLink = navbarNav.querySelector('a[href="register.html"]'); // Se existir
-            // A lógica para 'deptTicketsNavLinkItem' será removida
+            let logoffNavItem = navbarNav.querySelector('#btnLogoff')?.parentElement; // Pega o <li> pai do botão de logoff
 
             if (token && usuarioString) {
                 if (loginLink) loginLink.parentElement.style.display = 'none'; // Esconde Login
                 if (registerLink) registerLink.parentElement.style.display = 'none'; // Esconde Registrar
 
-                // const usuario = JSON.parse(usuarioString); // Não é mais necessário aqui se não controlamos o link do depto
-                // A lógica para adicionar/mostrar/esconder o link "Tickets do Departamento" foi removida.
-                // Se você quiser que ele apareça, deverá adicioná-lo estaticamente no HTML de todas as navbars
-                // e controlar sua visibilidade via CSS ou deixando-o sempre visível.
+                // Adicionar botão de Logoff se não existir
+                if (!logoffNavItem) {
+                    const li = document.createElement('li');
+                    li.className = 'nav-item';
+                    
+                    const btnLogoff = document.createElement('a');
+                    btnLogoff.className = 'nav-link'; // Para estilização similar aos outros links da navbar
+                    btnLogoff.id = 'btnLogoff';
+                    btnLogoff.href = '#'; // Necessário para que seja um link, mas o comportamento padrão será prevenido
+                    btnLogoff.textContent = 'Logoff';
+                    btnLogoff.style.cursor = 'pointer'; // Indica que é clicável
+                    
+                    btnLogoff.addEventListener('click', (e) => {
+                        e.preventDefault(); // Previne a navegação para '#'
+                        handleLogoff();
+                    });
+
+                    li.appendChild(btnLogoff);
+                    navbarNav.appendChild(li); // Adiciona o item de logoff ao final da lista de navegação
+                }
 
             } else { // Não está logado
                  // Garantir que links de Login/Registro estejam visíveis se não logado
                 if (loginLink) loginLink.parentElement.style.display = 'list-item';
                 if (registerLink) registerLink.parentElement.style.display = 'list-item';
+                // Remover botão de Logoff se existir
+                if (logoffNavItem) {
+                    logoffNavItem.remove();
+                }
             }
         }
     }
