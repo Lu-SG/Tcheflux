@@ -184,10 +184,124 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- Funções de Proteção de Página ---
-    function protegerPaginaTicket() {
-        // Verifica se estamos na página ticket.html e se o usuário não está logado
-        if (window.location.pathname.endsWith('ticket.html')) {
+    // --- Funções para carregar e exibir tickets ---
+    async function carregarMeusTickets() {
+        const container = document.getElementById('listaMeusTickets');
+        if (!container) return;
+
+        const token = localStorage.getItem('token');
+        if (!token) {
+            container.innerHTML = '<p class="text-danger">Você precisa estar logado para ver seus tickets. <a href="sign_in.html">Faça login</a>.</p>';
+            return;
+        }
+
+        try {
+            const response = await fetch('http://localhost:3001/api/tickets/meus-tickets', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!response.ok) {
+                if (response.status === 401) {
+                     container.innerHTML = '<p class="text-danger">Sua sessão expirou. <a href="sign_in.html">Faça login novamente</a>.</p>';
+                     localStorage.removeItem('token');
+                     localStorage.removeItem('usuario');
+                } else {
+                    const errData = await response.json();
+                    throw new Error(errData.error || `Erro ${response.status}`);
+                }
+                return;
+            }
+
+            const tickets = await response.json();
+            if (tickets.length === 0) {
+                container.innerHTML = '<p>Você ainda não registrou nenhum ticket.</p>';
+                return;
+            }
+
+            let tableHtml = '<table class="table table-striped table-hover"><thead><tr><th>Nº</th><th>Título</th><th>Status</th><th>Departamento</th><th>Data Abertura</th></tr></thead><tbody>';
+            tickets.forEach(ticket => {
+                tableHtml += `<tr>
+                    <td>${ticket.nro}</td>
+                    <td>${ticket.titulo}</td>
+                    <td>${ticket.status}</td>
+                    <td>${ticket.departamento_area}</td>
+                    <td>${new Date(ticket.datainicio).toLocaleString('pt-BR')}</td>
+                </tr>`;
+            });
+            tableHtml += '</tbody></table>';
+            container.innerHTML = tableHtml;
+
+        } catch (error) {
+            console.error('Erro ao carregar meus tickets:', error);
+            container.innerHTML = `<p class="text-danger">Erro ao carregar seus tickets: ${error.message}</p>`;
+        }
+    }
+
+    async function carregarTicketsDepartamento() {
+        const container = document.getElementById('listaTicketsDepartamento');
+        if (!container) return;
+
+        const token = localStorage.getItem('token');
+        const usuario = JSON.parse(localStorage.getItem('usuario'));
+
+        if (!token || !usuario) {
+            container.innerHTML = '<p class="text-danger">Você precisa estar logado como atendente para ver os tickets do departamento. <a href="sign_in.html">Faça login</a>.</p>';
+            return;
+        }
+        if (usuario.tipo !== 'Atendente') {
+            container.innerHTML = '<p class="text-danger">Apenas atendentes podem visualizar esta página.</p>';
+            // Opcional: redirecionar window.location.href = 'index.html';
+            return;
+        }
+
+        try {
+            const response = await fetch('http://localhost:3001/api/tickets/departamento', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!response.ok) {
+                 if (response.status === 401 || response.status === 403) {
+                     container.innerHTML = `<p class="text-danger">Acesso negado ou sessão expirada. <a href="sign_in.html">Faça login novamente</a>.</p>`;
+                     localStorage.removeItem('token');
+                     localStorage.removeItem('usuario');
+                } else {
+                    const errData = await response.json();
+                    throw new Error(errData.error || `Erro ${response.status}`);
+                }
+                return;
+            }
+
+            const tickets = await response.json();
+            // ... (Lógica para renderizar a tabela de tickets do departamento, similar a carregarMeusTickets)
+            // Exemplo simplificado:
+            if (tickets.length === 0) {
+                container.innerHTML = '<p>Não há tickets para este departamento no momento.</p>';
+                return;
+            }
+            let tableHtml = '<table class="table table-striped table-hover"><thead><tr><th>Nº</th><th>Título</th><th>Status</th><th>Solicitante</th><th>Data Abertura</th></tr></thead><tbody>';
+            tickets.forEach(ticket => {
+                tableHtml += `<tr>
+                    <td>${ticket.nro}</td>
+                    <td>${ticket.titulo}</td>
+                    <td>${ticket.status}</td>
+                    <td>${ticket.solicitante_nome}</td>
+                    <td>${new Date(ticket.datainicio).toLocaleString('pt-BR')}</td>
+                </tr>`;
+            });
+            tableHtml += '</tbody></table>';
+            container.innerHTML = tableHtml;
+
+        } catch (error) {
+            console.error('Erro ao carregar tickets do departamento:', error);
+            container.innerHTML = `<p class="text-danger">Erro ao carregar tickets do departamento: ${error.message}</p>`;
+        }
+    }
+
+    // --- Funções de Proteção de Página e Atualização da UI ---
+    function protegerPaginas() {
+        const path = window.location.pathname;
+        // Verifica se estamos em páginas que exigem login
+        if (path.endsWith('ticket.html') || path.endsWith('meus_tickets.html') || path.endsWith('ticket_departamento.html')) {
             const token = localStorage.getItem('token');
             if (!token) {
                 alert('Você precisa estar logado para acessar esta página.');
@@ -195,7 +309,95 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     }
+    
+    function atualizarNavbar() {
+        const token = localStorage.getItem('token');
+        const usuarioString = localStorage.getItem('usuario');
+        const navbarNav = document.querySelector('#navbarSupportedContent .navbar-nav');
+
+        if (navbarNav) {
+            // Links que são sempre manipulados (visibilidade)
+            const loginLink = navbarNav.querySelector('a[href="sign_in.html"]');
+            const registerLink = navbarNav.querySelector('a[href="register.html"]'); // Se existir
+            let deptTicketsNavLinkItem = navbarNav.querySelector('a[href="ticket_departamento.html"]')?.parentElement;
+
+            if (token && usuarioString) {
+                if (loginLink) loginLink.parentElement.style.display = 'none'; // Esconde Login
+                if (registerLink) registerLink.parentElement.style.display = 'none'; // Esconde Registrar
+
+                const usuario = JSON.parse(usuarioString);
+                // Adicionar link "Tickets do Departamento" se for Atendente
+                if (usuario.tipo === 'Atendente' && !navbarNav.querySelector('a[href="ticket_departamento.html"]')) {
+                    const li = document.createElement('li');
+                    li.className = 'nav-item';
+                    li.innerHTML = `<a class="nav-link ${window.location.pathname.endsWith('ticket_departamento.html') ? 'active' : ''}" href="ticket_departamento.html">Tickets do Depto.</a>`;
+                    
+                    const myTicketsLink = navbarNav.querySelector('a[href="meus_tickets.html"]');
+                    if (myTicketsLink) {
+                        myTicketsLink.parentElement.insertAdjacentElement('afterend', li);
+                    } else {
+                        // Fallback: tentar inserir após "Novo Ticket"
+                        const novoTicketLink = navbarNav.querySelector('a[href="ticket.html"]');
+                        if (novoTicketLink) {
+                            novoTicketLink.parentElement.insertAdjacentElement('afterend', li);
+                        } else {
+                            navbarNav.appendChild(li); // Último recurso
+                        }
+                    }
+                    deptTicketsNavLinkItem = li; // Atualiza a referência para o item criado
+                }
+                // Garante que o link (existente ou recém-criado) esteja visível para Atendentes
+                if (deptTicketsNavLinkItem && usuario.tipo === 'Atendente') {
+                    deptTicketsNavLinkItem.style.display = 'list-item';
+                } else if (deptTicketsNavLinkItem) {
+                    deptTicketsNavLinkItem.style.display = 'none'; // Esconde se não for atendente
+                }
+
+            } else { // Não está logado
+                 // Garantir que links de Login/Registro estejam visíveis se não logado
+                if (loginLink) loginLink.parentElement.style.display = 'list-item';
+                if (registerLink) registerLink.parentElement.style.display = 'list-item';
+                // Esconder link de "Tickets do Departamento" se não logado
+                if (deptTicketsNavLinkItem) deptTicketsNavLinkItem.style.display = 'none';
+            }
+        }
+    }
+
+    function atualizarPainelControleIndex() {
+        // Executar apenas na página index.html
+        const currentPage = window.location.pathname;
+        if (!currentPage.endsWith('index.html') && currentPage !== '/' && !currentPage.endsWith('/frontend/')) { // Adicionado /frontend/ para o Live Server
+            return;
+        }
+
+        const containerTicketsDepartamento = document.getElementById('containerTicketsDepartamento');
+        if (!containerTicketsDepartamento) return;
+
+        const token = localStorage.getItem('token');
+        const usuarioString = localStorage.getItem('usuario');
+
+        if (token && usuarioString) {
+            const usuario = JSON.parse(usuarioString);
+            if (usuario.tipo === 'Atendente') {
+                containerTicketsDepartamento.style.display = 'block'; // Ou 'flex' se o .col precisar
+            } else {
+                containerTicketsDepartamento.style.display = 'none';
+            }
+        } else {
+            containerTicketsDepartamento.style.display = 'none';
+        }
+    }
 
     // Executar ao carregar a página
-    protegerPaginaTicket(); // Protege a página de tickets se necessário
+    protegerPaginas(); 
+    atualizarNavbar();
+    atualizarPainelControleIndex(); // Adiciona a chamada para a nova função
+
+    // Chamar as funções de carregamento de dados dependendo da página atual
+    if (window.location.pathname.endsWith('meus_tickets.html')) {
+        carregarMeusTickets();
+    }
+    if (window.location.pathname.endsWith('ticket_departamento.html')) {
+        carregarTicketsDepartamento();
+    }
 });

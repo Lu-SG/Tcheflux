@@ -69,4 +69,51 @@ router.post('/', authMiddleware, async (req, res) => { // Aplicar o middleware a
     }
 });
 
+// Rota para LISTAR os tickets criados pelo usuário logado (GET /api/tickets/meus-tickets)
+router.get('/meus-tickets', authMiddleware, async (req, res) => {
+    try {
+        const idSolicitante = req.usuario.id;
+        const result = await pool.query(
+            `SELECT t.nro, t.titulo, t.status, t.datainicio, d.areas as departamento_area
+             FROM ticket t
+             JOIN departamento d ON t.coddepto = d.coddepto
+             WHERE t.idsolicitante = $1
+             ORDER BY t.datainicio DESC`,
+            [idSolicitante]
+        );
+        res.json(result.rows);
+    } catch (err) {
+        console.error('Erro ao buscar meus tickets:', err);
+        res.status(500).json({ error: 'Erro interno do servidor ao buscar seus tickets.' });
+    }
+});
+
+// Rota para LISTAR os tickets do departamento do atendente logado (GET /api/tickets/departamento)
+router.get('/departamento', authMiddleware, async (req, res) => {
+    try {
+        // Verificar se o usuário é um Atendente e tem um coddepto
+        if (req.usuario.tipo !== 'Atendente' || !req.usuario.coddepto) {
+            return res.status(403).json({ error: 'Acesso negado. Apenas atendentes com departamento podem visualizar tickets do departamento.' });
+        }
+
+        const codDeptoAtendente = req.usuario.coddepto;
+
+        // Exemplo: buscar tickets abertos ou em andamento do departamento
+        // Você pode ajustar os status conforme necessário
+        const result = await pool.query(
+            `SELECT t.nro, t.titulo, t.status, t.datainicio, u.nomecompleto as solicitante_nome
+             FROM ticket t
+             JOIN usuario u ON t.idsolicitante = u.idusuario
+             WHERE t.coddepto = $1 AND (t.status = 'Aberto' OR t.status = 'Em Andamento')
+             ORDER BY t.datainicio ASC`, // Mais antigos primeiro para atendimento
+            [codDeptoAtendente]
+        );
+        res.json(result.rows);
+    } catch (err) {
+        console.error('Erro ao buscar tickets do departamento:', err);
+        res.status(500).json({ error: 'Erro interno do servidor ao buscar tickets do departamento.' });
+    }
+});
+
+
 module.exports = router;

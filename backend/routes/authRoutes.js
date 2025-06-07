@@ -51,7 +51,8 @@ router.post('/login', async (req, res) => {
                 id: usuario.idusuario,
                 nome: usuario.nomecompleto,
                 tipo: usuario.tipo,
-                email: usuario.email
+                email: usuario.email,
+                ...(usuario.tipo === 'Atendente' && usuario.coddepto && { coddepto: usuario.coddepto })
             }
         };
 
