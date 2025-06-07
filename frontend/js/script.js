@@ -340,46 +340,21 @@ document.addEventListener('DOMContentLoaded', () => {
             // Links que são sempre manipulados (visibilidade)
             const loginLink = navbarNav.querySelector('a[href="sign_in.html"]');
             const registerLink = navbarNav.querySelector('a[href="register.html"]'); // Se existir
-            let deptTicketsNavLinkItem = navbarNav.querySelector('a[href="ticket_departamento.html"]')?.parentElement;
+            // A lógica para 'deptTicketsNavLinkItem' será removida
 
             if (token && usuarioString) {
                 if (loginLink) loginLink.parentElement.style.display = 'none'; // Esconde Login
                 if (registerLink) registerLink.parentElement.style.display = 'none'; // Esconde Registrar
 
-                const usuario = JSON.parse(usuarioString);
-                // Adicionar link "Tickets do Departamento" se for Atendente
-                if (usuario.tipo === 'Atendente' && !navbarNav.querySelector('a[href="ticket_departamento.html"]')) {
-                    const li = document.createElement('li');
-                    li.className = 'nav-item';
-                    li.innerHTML = `<a class="nav-link ${window.location.pathname.endsWith('ticket_departamento.html') ? 'active' : ''}" href="ticket_departamento.html">Tickets do Depto.</a>`;
-                    
-                    const myTicketsLink = navbarNav.querySelector('a[href="meus_tickets.html"]');
-                    if (myTicketsLink) {
-                        myTicketsLink.parentElement.insertAdjacentElement('afterend', li);
-                    } else {
-                        // Fallback: tentar inserir após "Novo Ticket"
-                        const novoTicketLink = navbarNav.querySelector('a[href="ticket.html"]');
-                        if (novoTicketLink) {
-                            novoTicketLink.parentElement.insertAdjacentElement('afterend', li);
-                        } else {
-                            navbarNav.appendChild(li); // Último recurso
-                        }
-                    }
-                    deptTicketsNavLinkItem = li; // Atualiza a referência para o item criado
-                }
-                // Garante que o link (existente ou recém-criado) esteja visível para Atendentes
-                if (deptTicketsNavLinkItem && usuario.tipo === 'Atendente') {
-                    deptTicketsNavLinkItem.style.display = 'list-item';
-                } else if (deptTicketsNavLinkItem) {
-                    deptTicketsNavLinkItem.style.display = 'none'; // Esconde se não for atendente
-                }
+                // const usuario = JSON.parse(usuarioString); // Não é mais necessário aqui se não controlamos o link do depto
+                // A lógica para adicionar/mostrar/esconder o link "Tickets do Departamento" foi removida.
+                // Se você quiser que ele apareça, deverá adicioná-lo estaticamente no HTML de todas as navbars
+                // e controlar sua visibilidade via CSS ou deixando-o sempre visível.
 
             } else { // Não está logado
                  // Garantir que links de Login/Registro estejam visíveis se não logado
                 if (loginLink) loginLink.parentElement.style.display = 'list-item';
                 if (registerLink) registerLink.parentElement.style.display = 'list-item';
-                // Esconder link de "Tickets do Departamento" se não logado
-                if (deptTicketsNavLinkItem) deptTicketsNavLinkItem.style.display = 'none';
             }
         }
     }
