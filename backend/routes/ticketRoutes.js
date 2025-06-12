@@ -115,6 +115,23 @@ router.get('/departamento', authMiddleware, async (req, res) => {
     }
 });
 
+// Rota para LISTAR os tickets do atendente logado (GET /api/tickets/atendente)
+router.get('/ticket-atendente', authMiddleware, async (req, res) => {
+    try {
+        const result = await pool.query(
+            `SELECT t.nro, t.titulo, t.status, t.datainicio, u.nomecompleto as solicitante_nome
+             FROM ticket t
+             JOIN usuario u ON t.idsolicitante = u.idusuario
+             ORDER BY t.datainicio ASC`, 
+            [idAtendente]
+        );
+        res.json(result.rows);
+    } catch (err) {
+        console.error('Erro ao buscar tickets do departamento:', err);
+        res.status(500).json({ error: 'Erro interno do servidor ao buscar tickets do departamento.' });
+    }
+});
+
 // Rota para um ATENDENTE assumir um ticket (PUT /api/tickets/:nro/assumir)
 router.put('/:nro/assumir', authMiddleware, async (req, res) => {
     const { nro } = req.params; // Número do ticket da URL
