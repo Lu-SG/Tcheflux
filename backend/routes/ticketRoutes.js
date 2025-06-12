@@ -118,17 +118,32 @@ router.get('/departamento', authMiddleware, async (req, res) => {
 // Rota para LISTAR os tickets do atendente logado (GET /api/tickets/atendente)
 router.get('/ticket-atendente', authMiddleware, async (req, res) => {
     try {
+        // Verificar se o usuário é um Atendente
+        if (req.usuario.tipo !== 'Atendente') {
+            return res.status(403).json({ error: 'Acesso negado. Apenas atendentes podem visualizar seus tickets atribuídos.' });
+        }
+
+        const idAtendenteLogado = req.usuario.id; // Obter o ID do atendente logado do req.usuario
+
         const result = await pool.query(
-            `SELECT t.nro, t.titulo, t.status, t.datainicio, u.nomecompleto as solicitante_nome
+            `SELECT 
+                t.nro, 
+                t.titulo, 
+                t.status, 
+                t.datainicio, 
+                solicitante.nomecompleto AS solicitante_nome, -- Nome do solicitante
+                atendente_info.nomecompleto AS atendente_nome -- Nome do atendente (opcional, já que estamos filtrando por ele)
              FROM ticket t
-             JOIN usuario u ON t.idsolicitante = u.idusuario
+             LEFT JOIN usuario solicitante ON t.idsolicitante = solicitante.idusuario
+             LEFT JOIN usuario atendente_info ON t.idatendente = atendente_info.idusuario 
+             WHERE t.idatendente = $1 -- Filtrar pelos tickets atribuídos ao atendente logado
              ORDER BY t.datainicio ASC`, 
-            [idAtendente]
+            [idAtendenteLogado] // Usar o ID do atendente logado como parâmetro
         );
         res.json(result.rows);
     } catch (err) {
-        console.error('Erro ao buscar tickets do departamento:', err);
-        res.status(500).json({ error: 'Erro interno do servidor ao buscar tickets do departamento.' });
+        console.error('Erro ao buscar tickets do atendente:', err);
+        res.status(500).json({ error: 'Erro interno do servidor ao buscar os tickets do atendente.' });
     }
 });
 

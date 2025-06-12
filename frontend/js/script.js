@@ -259,7 +259,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            const response = await fetch('http://localhost:3001/api/tickets/meus-tickets', {
+            const response = await fetch('http://localhost:3001/api/tickets/ticket-atendente', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 
@@ -298,7 +298,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         <li class="list-group-item flex-fill"><strong>Nº:</strong> ${ticket.nro}</li>
                         <li class="list-group-item flex-fill w-25"><strong>Título:</strong> ${ticket.titulo}</li>
                         <li class="list-group-item flex-fill"><strong>Status:</strong> ${ticket.status}</li>
-                        <li class="list-group-item flex-fill"><strong>Depto:</strong> ${ticket.departamento_area}</li>
                         <li class="list-group-item flex-fill"><strong>Data:</strong> ${new Date(ticket.datainicio).toLocaleString('pt-BR')}</li>
                     </ul>
                 `;
