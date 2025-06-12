@@ -186,4 +186,33 @@ router.put('/:nro/assumir', authMiddleware, async (req, res) => {
     }
 });
 
+// Rota para OBTER detalhes de um ticket específico (GET /api/tickets/:nro)
+router.get('/:nro', authMiddleware, async (req, res) => {
+    const { nro } = req.params;
+    try {
+        const ticketResult = await pool.query(
+            `SELECT 
+                t.*, 
+                s.nomecompleto as solicitante_nome, 
+                s.email as solicitante_email,
+                a.nomecompleto as atendente_nome, 
+                a.email as atendente_email,
+                d.areas as departamento_area
+             FROM ticket t
+             JOIN usuario s ON t.idsolicitante = s.idusuario
+             LEFT JOIN usuario a ON t.idatendente = a.idusuario
+             LEFT JOIN departamento d ON t.coddepto = d.coddepto
+             WHERE t.nro = $1`,
+            [nro]
+        );
+
+        if (ticketResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Ticket não encontrado.' });
+        }
+        res.json(ticketResult.rows[0]);
+    } catch (err) {
+        console.error(`Erro ao buscar ticket ${nro}:`, err);
+        res.status(500).json({ error: 'Erro interno do servidor ao buscar detalhes do ticket.' });
+    }
+});
 module.exports = router;

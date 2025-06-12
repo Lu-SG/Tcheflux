@@ -271,15 +271,16 @@ document.addEventListener('DOMContentLoaded', () => {
             let listHtml = '';
             tickets.forEach(ticket => {
                 const slaInfo = calcularSLA(ticket);
+                const linkTicket = `visualizar_ticket.html?nro=${ticket.nro}`;
                 listHtml += `
-                    <ul class="list-group list-group-horizontal-md mb-2">
-                        <li class="list-group-item flex-fill"><strong>Nº:</strong> ${ticket.nro}</li>
-                        <li class="list-group-item flex-fill w-25"><strong>Título:</strong> ${ticket.titulo}</li>
-                        <li class="list-group-item flex-fill"><strong>Status:</strong> ${ticket.status}</li>
-                        <li class="list-group-item flex-fill"><strong>Depto:</strong> ${ticket.departamento_area}</li>
-                        <li class="list-group-item flex-fill"><strong>SLA:</strong> ${slaInfo}</li>
-                        <li class="list-group-item flex-fill"><strong>Data:</strong> ${new Date(ticket.datainicio).toLocaleString('pt-BR')}</li>
-                    </ul>
+                    <a href="${linkTicket}" class="list-group-item list-group-item-action mb-2">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h5 class="mb-1">#${ticket.nro} - ${ticket.titulo}</h5>
+                            <small>Data: ${new Date(ticket.datainicio).toLocaleString('pt-BR')}</small>
+                        </div>
+                        <p class="mb-1">Status: ${ticket.status} | Depto: ${ticket.departamento_area}</p>
+                        <small>SLA: ${slaInfo}</small>
+                    </a>
                 `;
             });
             container.innerHTML = listHtml;
@@ -336,14 +337,16 @@ document.addEventListener('DOMContentLoaded', () => {
             let listHtml = '';
             tickets.forEach(ticket => {
                 const slaInfo = calcularSLA(ticket);
+                const linkTicket = `visualizar_ticket.html?nro=${ticket.nro}`;
                 listHtml += `
-                    <ul class="list-group list-group-horizontal-md mb-2">
-                        <li class="list-group-item flex-fill"><strong>Nº:</strong> ${ticket.nro}</li>
-                        <li class="list-group-item flex-fill w-25"><strong>Título:</strong> ${ticket.titulo}</li>
-                        <li class="list-group-item flex-fill"><strong>Status:</strong> ${ticket.status}</li>
-                        <li class="list-group-item flex-fill"><strong>SLA:</strong> ${slaInfo}</li>
-                        <li class="list-group-item flex-fill"><strong>Data:</strong> ${new Date(ticket.datainicio).toLocaleString('pt-BR')}</li>
-                    </ul>
+                     <a href="${linkTicket}" class="list-group-item list-group-item-action mb-2">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h5 class="mb-1">#${ticket.nro} - ${ticket.titulo}</h5>
+                            <small>Data: ${new Date(ticket.datainicio).toLocaleString('pt-BR')}</small>
+                        </div>
+                        <p class="mb-1">Status: ${ticket.status}</p>
+                        <small>SLA: ${slaInfo}</small>
+                    </a>
                 `;
             });
             container.innerHTML = listHtml;
@@ -407,16 +410,18 @@ document.addEventListener('DOMContentLoaded', () => {
             let listHtml = '';
             tickets.forEach(ticket => {
                 const slaInfo = calcularSLA(ticket);
+                const linkTicket = `visualizar_ticket.html?nro=${ticket.nro}`;
                 listHtml += `
-                    <ul class="list-group list-group-horizontal-md mb-2">
-                        <li class="list-group-item flex-fill"><strong>Nº:</strong> ${ticket.nro}</li>
-                        <li class="list-group-item flex-fill w-25"><strong>Título:</strong> ${ticket.titulo}</li>
-                        <li class="list-group-item flex-fill"><strong>Status:</strong> ${ticket.status}</li>
-                        <li class="list-group-item flex-fill"><strong>Solic.:</strong> ${ticket.solicitante_nome}</li>
-                        <li class="list-group-item flex-fill"><strong>SLA:</strong> ${slaInfo}</li>
-                        <li class="list-group-item flex-fill"><strong>Data:</strong> ${new Date(ticket.datainicio).toLocaleString('pt-BR')}</li>
-                        <li class="list-group-item"><button type="button" class="btn btn-success btn-sm btn-assumir-ticket" data-nro-ticket="${ticket.nro}">Assumir</button></li>
-                    </ul>
+                    <div class="list-group-item mb-2">
+                        <div class="d-flex w-100 justify-content-between">
+                            <a href="${linkTicket}" class="text-decoration-none text-dark flex-grow-1">
+                                <h5 class="mb-1">#${ticket.nro} - ${ticket.titulo}</h5>
+                            </a>
+                            <button type="button" class="btn btn-success btn-sm btn-assumir-ticket ms-2" data-nro-ticket="${ticket.nro}" style="${ticket.status !== 'Aberto' ? 'display:none;' : ''}">Assumir</button>
+                        </div>
+                        <p class="mb-1">Solicitante: ${ticket.solicitante_nome} | Status: ${ticket.status}</p>
+                        <small>Data: ${new Date(ticket.datainicio).toLocaleString('pt-BR')} | SLA: ${slaInfo}</small>
+                    </div>
                 `;
             });
             container.innerHTML = listHtml;
@@ -427,11 +432,113 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    async function carregarDetalhesTicket() {
+        const loadingMessage = document.getElementById('loadingMessage');
+        const ticketDetailContainer = document.getElementById('ticketDetailContainer');
+        const errorMessageDiv = document.getElementById('errorMessage');
+
+        if (!ticketDetailContainer) return; // Só executa na página de visualização
+
+        const params = new URLSearchParams(window.location.search);
+        const nroTicket = params.get('nro');
+
+        if (!nroTicket) {
+            loadingMessage.style.display = 'none';
+            errorMessageDiv.textContent = 'Número do ticket não fornecido na URL.';
+            errorMessageDiv.style.display = 'block';
+            return;
+        }
+
+        const token = localStorage.getItem('token');
+        const usuarioLogado = JSON.parse(localStorage.getItem('usuario'));
+
+        if (!token || !usuarioLogado) {
+            loadingMessage.style.display = 'none';
+            errorMessageDiv.textContent = 'Você precisa estar logado para visualizar um ticket.';
+            errorMessageDiv.style.display = 'block';
+            // Opcional: redirecionar para login
+            // window.location.href = 'sign_in.html';
+            return;
+        }
+
+        try {
+            const response = await fetch(`http://localhost:3001/api/tickets/${nroTicket}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!response.ok) {
+                let errorMsg = `Erro ao carregar o ticket: ${response.status}`;
+                try {
+                    const errData = await response.json();
+                    errorMsg = errData.error || errorMsg;
+                } catch (e) { /* ignore json parse error */ }
+                
+                if (response.status === 401 || response.status === 403) {
+                    errorMsg = 'Acesso negado ou sessão expirada. Faça login novamente.';
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('usuario');
+                }
+                throw new Error(errorMsg);
+            }
+
+            const ticket = await response.json();
+
+            // Preencher detalhes do ticket
+            document.getElementById('ticketNroDetalhe').textContent = ticket.nro;
+            document.getElementById('ticketTituloPrincipal').textContent = `Ticket #${ticket.nro} - ${ticket.titulo}`;
+            
+            const statusSpan = document.getElementById('ticketStatus');
+            statusSpan.textContent = ticket.status;
+            statusSpan.className = `badge bg-${getStatusColor(ticket.status)}`; // Função auxiliar para cor do status
+
+            document.getElementById('ticketSolicitante').textContent = `${ticket.solicitante_nome} (${ticket.solicitante_email})`;
+            document.getElementById('ticketDepartamento').textContent = ticket.departamento_area || 'N/A';
+            document.getElementById('ticketAtendente').textContent = ticket.atendente_nome ? `${ticket.atendente_nome} (${ticket.atendente_email})` : 'Não atribuído';
+            document.getElementById('ticketDataInicio').textContent = new Date(ticket.datainicio).toLocaleString('pt-BR');
+            document.getElementById('ticketDataAtualizacao').textContent = ticket.dataatualizacao ? new Date(ticket.dataatualizacao).toLocaleString('pt-BR') : 'Nenhuma';
+            document.getElementById('ticketSLA').innerHTML = calcularSLA(ticket);
+            document.getElementById('ticketDescricaoHistorico').textContent = ticket.descricao || 'Nenhuma descrição ou histórico informado.';
+
+            // Controlar visibilidade das ações
+            const areaInteracao = document.getElementById('areaInteracao');
+            const acoesAtendenteDiv = document.getElementById('acoesAtendente');
+            const acoesSolicitanteDiv = document.getElementById('acoesSolicitante');
+            const btnAprovar = document.getElementById('btnAprovarTicket');
+            const btnReprovar = document.getElementById('btnReprovarTicket');
+
+            if (usuarioLogado.tipo === 'Atendente') {
+                acoesAtendenteDiv.style.display = 'block';
+                acoesSolicitanteDiv.style.display = 'none';
+            } else if (usuarioLogado.id === ticket.idsolicitante) { // É o solicitante do ticket
+                acoesAtendenteDiv.style.display = 'none';
+                acoesSolicitanteDiv.style.display = 'block';
+                if (ticket.status === 'Resolvido') {
+                    btnAprovar.style.display = 'inline-block';
+                    btnReprovar.style.display = 'inline-block';
+                } else {
+                    btnAprovar.style.display = 'none';
+                    btnReprovar.style.display = 'none';
+                }
+            } else { // Outro usuário que não é atendente nem o solicitante (não deveria ter acesso total)
+                areaInteracao.style.display = 'none'; // Esconde toda a área de interação
+            }
+
+            loadingMessage.style.display = 'none';
+            ticketDetailContainer.style.display = 'block';
+
+        } catch (error) {
+            loadingMessage.style.display = 'none';
+            errorMessageDiv.textContent = error.message;
+            errorMessageDiv.style.display = 'block';
+            console.error('Erro ao carregar detalhes do ticket:', error);
+        }
+    }
+
     // --- Funções de Proteção de Página e Atualização da UI ---
     function protegerPaginas() {
         const path = window.location.pathname;
         // Verifica se estamos em páginas que exigem login
-        if (path.endsWith('ticket.html') || path.endsWith('meus_tickets.html') || path.endsWith('ticket_departamento.html')) {
+        if (path.endsWith('ticket.html') || path.endsWith('meus_tickets.html') || path.endsWith('ticket_departamento.html') || path.endsWith('visualizar_ticket.html')) {
             const token = localStorage.getItem('token');
             if (!token) {
                 alert('Você precisa estar logado para acessar esta página.');
@@ -610,6 +717,16 @@ document.addEventListener('DOMContentLoaded', () => {
         } 
     }
 
+    function getStatusColor(status) {
+        switch (status) {
+            case 'Aberto': return 'primary';
+            case 'Em Andamento': return 'info';
+            case 'Resolvido': return 'success';
+            case 'Fechado': return 'secondary';
+            case 'Aguardando Resposta': return 'warning';
+            default: return 'light';
+        }
+    }
     // Executar ao carregar a página
     protegerPaginas(); 
     atualizarNavbar();
@@ -624,6 +741,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (window.location.pathname.endsWith('ticket_atendente.html')) {
         carregarTicketsAtendente();
+    }
+    if (window.location.pathname.endsWith('visualizar_ticket.html')) {
+        carregarDetalhesTicket();
     }
 
 

@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Visualizar Ticket - Tcheflux</title>
+    <link href="node_modules/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="css/style.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg bg-body-tertiary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="index.html">Tcheflux</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false"
+                aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link" href="index.html">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="sobre.html">Sobre Nós</a>
+                    </li>
+                    <!-- Links dinâmicos (Login/Logoff, Novo Ticket, etc.) serão gerenciados pelo script.js -->
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container mt-4">
+        <div id="loadingMessage" class="alert alert-info">Carregando detalhes do ticket...</div>
+        <div id="ticketDetailContainer" style="display: none;">
+            <h1 id="ticketTituloPrincipal">Ticket #<span id="ticketNroDetalhe"></span></h1>
+            <hr>
+
+            <div class="row">
+                <div class="col-md-8">
+                    <h3>Detalhes</h3>
+                    <p><strong>Status:</strong> <span id="ticketStatus" class="badge"></span></p>
+                    <p><strong>Solicitante:</strong> <span id="ticketSolicitante"></span></p>
+                    <p><strong>Departamento:</strong> <span id="ticketDepartamento"></span></p>
+                    <p><strong>Atendente:</strong> <span id="ticketAtendente">N/A</span></p>
+                    <p><strong>Criado em:</strong> <span id="ticketDataInicio"></span></p>
+                    <p><strong>Última Atualização:</strong> <span id="ticketDataAtualizacao"></span></p>
+                    <p><strong>SLA:</strong> <span id="ticketSLA"></span></p>
+
+                    <h4>Histórico de Descrição</h4>
+                    <div id="ticketDescricaoHistorico" class="bg-light p-3 rounded mb-3" style="white-space: pre-wrap; max-height: 300px; overflow-y: auto;">
+                        <!-- Histórico será preenchido aqui -->
+                    </div>
+
+                    <div id="areaInteracao">
+                        <h4>Adicionar Comentário/Atualização</h4>
+                        <form id="formAdicionarComentario">
+                            <div class="mb-3">
+                                <textarea class="form-control" id="novoComentario" rows="4" required placeholder="Digite seu comentário ou atualização aqui..."></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Adicionar Comentário</button>
+                        </form>
+
+                        <div id="acoesAtendente" class="mt-3" style="display: none;">
+                            <h5>Ações do Atendente</h5>
+                            <form id="formAtualizarStatus">
+                                <div class="mb-3">
+                                    <label for="novoStatusTicket" class="form-label">Mudar Status para:</label>
+                                    <select class="form-select" id="novoStatusTicket">
+                                        <option value="Em Andamento">Em Andamento</option>
+                                        <option value="Aguardando Resposta">Aguardando Resposta</option>
+                                        <option value="Resolvido">Resolvido</option>
+                                        <!-- Outros status relevantes -->
+                                    </select>
+                                </div>
+                                <button type="submit" class="btn btn-warning">Atualizar Status</button>
+                            </form>
+                        </div>
+
+                        <div id="acoesSolicitante" class="mt-3" style="display: none;">
+                            <h5>Ações do Solicitante</h5>
+                            <button id="btnAprovarTicket" class="btn btn-success me-2" style="display: none;">Aprovar Solução</button>
+                            <button id="btnReprovarTicket" class="btn btn-danger" style="display: none;">Reabrir Ticket (Reprovar)</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <!-- Pode ser usado para informações adicionais, anexos, etc. no futuro -->
+                </div>
+            </div>
+        </div>
+        <div id="errorMessage" class="alert alert-danger" style="display: none;"></div>
+
+    </main>
+
+    <footer class="text-center mt-4 mb-4">
+        <p>&copy; 2024 Tcheflux. Todos os direitos reservados.</p>
+    </footer>
+
+    <script src="node_modules/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/script.js"></script>
+</body>
+</html>
