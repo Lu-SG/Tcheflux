@@ -115,5 +115,42 @@ router.get('/departamento', authMiddleware, async (req, res) => {
     }
 });
 
+// Rota para um ATENDENTE assumir um ticket (PUT /api/tickets/:nro/assumir)
+router.put('/:nro/assumir', authMiddleware, async (req, res) => {
+    const { nro } = req.params; // Número do ticket da URL
+    const idAtendente = req.usuario.id; // ID do atendente logado
+
+    // Verificar se o usuário é um Atendente
+    if (req.usuario.tipo !== 'Atendente') {
+        return res.status(403).json({ error: 'Apenas atendentes podem assumir tickets.' });
+    }
+
+    try {
+        // Verificar o status atual do ticket e se ele não tem um atendente
+        const ticketResult = await pool.query('SELECT status, idatendente FROM ticket WHERE nro = $1', [nro]);
+
+        if (ticketResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Ticket não encontrado.' });
+        }
+
+        const ticketAtual = ticketResult.rows[0];
+
+        if (ticketAtual.status !== 'Aberto') {
+            return res.status(400).json({ error: `Este ticket não está "Aberto". Status atual: ${ticketAtual.status}.` });
+        }
+
+        // Atualizar o ticket: definir status para 'Em Andamento' e atribuir o idatendente
+        const updatedTicket = await pool.query(
+            `UPDATE ticket SET status = 'Em Andamento', idatendente = $1, dataAtualizacao = CURRENT_TIMESTAMP 
+             WHERE nro = $2 RETURNING *`,
+            [idAtendente, nro]
+        );
+
+        res.json(updatedTicket.rows[0]);
+    } catch (err) {
+        console.error(`Erro ao assumir ticket ${nro}:`, err);
+        res.status(500).json({ error: 'Erro interno do servidor ao tentar assumir o ticket.' });
+    }
+});
 
 module.exports = router;

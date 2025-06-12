@@ -308,11 +308,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         <li class="list-group-item flex-fill"><strong>Status:</strong> ${ticket.status}</li>
                         <li class="list-group-item flex-fill"><strong>Solic.:</strong> ${ticket.solicitante_nome}</li>
                         <li class="list-group-item flex-fill"><strong>Data:</strong> ${new Date(ticket.datainicio).toLocaleString('pt-BR')}</li>
+                        <li class="list-group-item"><button type="button" class="btn btn-success btn-sm btn-assumir-ticket" data-nro-ticket="${ticket.nro}">Assumir</button></li>
                     </ul>
                 `;
             });
             container.innerHTML = listHtml;
-        } catch (error) {
+            adicionarEventListenersAssumirTicket(); // Adiciona os listeners aos novos botões
+        } catch (error) { // TODO: Melhorar tratamento de erro aqui, como fizemos em carregarMeusTickets
             console.error('Erro ao carregar tickets do departamento:', error);
             container.innerHTML = `<p class="text-danger">Erro ao carregar tickets do departamento: ${error.message}</p>`;
         }
@@ -337,6 +339,54 @@ document.addEventListener('DOMContentLoaded', () => {
         alert('Você foi desconectado.'); // Mensagem opcional
         window.location.href = 'sign_in.html';
         // A página será recarregada ao redirecionar, então atualizarNavbar() será chamada automaticamente no carregamento da nova página.
+    }
+
+    function adicionarEventListenersAssumirTicket() {
+        const botoesAssumir = document.querySelectorAll('.btn-assumir-ticket');
+        botoesAssumir.forEach(botao => {
+            botao.addEventListener('click', async function() {
+                const nroTicket = this.dataset.nroTicket;
+                if (confirm(`Tem certeza que deseja assumir o ticket Nº ${nroTicket}?`)) {
+                    await assumirTicket(nroTicket, this);
+                }
+            });
+        });
+    }
+
+    async function assumirTicket(nroTicket, botao) {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            alert('Sua sessão expirou. Faça login novamente.');
+            window.location.href = 'sign_in.html';
+            return;
+        }
+
+        botao.disabled = true;
+        botao.textContent = 'Assumindo...';
+
+        try {
+            const response = await fetch(`http://localhost:3001/api/tickets/${nroTicket}/assumir`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (response.ok) {
+                alert(`Ticket Nº ${nroTicket} assumido com sucesso!`);
+                carregarTicketsDepartamento(); // Recarrega a lista para refletir a mudança
+            } else {
+                const errorData = await response.json();
+                alert(`Erro ao assumir ticket: ${errorData.error || response.statusText}`);
+                botao.disabled = false;
+                botao.textContent = 'Assumir';
+            }
+        } catch (error) {
+            console.error('Erro na requisição para assumir ticket:', error);
+            alert('Erro de rede ao tentar assumir o ticket.');
+            botao.disabled = false;
+            botao.textContent = 'Assumir';
+        }
     }
 
     function atualizarNavbar() {
