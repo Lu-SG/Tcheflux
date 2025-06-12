@@ -348,11 +348,22 @@ document.addEventListener('DOMContentLoaded', () => {
             // Links que são sempre manipulados (visibilidade)
             const loginLink = navbarNav.querySelector('a[href="sign_in.html"]');
             const registerLink = navbarNav.querySelector('a[href="register.html"]'); // Se existir
+            const novoTicketLink = navbarNav.querySelector('a[href="ticket.html"]');
             let logoffNavItem = navbarNav.querySelector('#btnLogoff')?.parentElement; // Pega o <li> pai do botão de logoff
 
             if (token && usuarioString) {
                 if (loginLink) loginLink.parentElement.style.display = 'none'; // Esconde Login
                 if (registerLink) registerLink.parentElement.style.display = 'none'; // Esconde Registrar
+
+                const usuario = JSON.parse(usuarioString);
+                // Controlar visibilidade do link "Novo Ticket"
+                if (novoTicketLink) {
+                    if (usuario.tipo === 'Atendente') {
+                        novoTicketLink.parentElement.style.display = 'none'; // Esconde para Atendente
+                    } else {
+                        novoTicketLink.parentElement.style.display = 'list-item'; // Mostra para outros (Solicitante)
+                    }
+                }
 
                 // Adicionar botão de Logoff se não existir
                 if (!logoffNavItem) {
@@ -379,6 +390,10 @@ document.addEventListener('DOMContentLoaded', () => {
                  // Garantir que links de Login/Registro estejam visíveis se não logado
                 if (loginLink) loginLink.parentElement.style.display = 'list-item';
                 if (registerLink) registerLink.parentElement.style.display = 'list-item';
+                // Mostrar "Novo Ticket" se não estiver logado (usuário pode querer ver a página antes de logar)
+                if (novoTicketLink) {
+                    novoTicketLink.parentElement.style.display = 'list-item';
+                }
                 // Remover botão de Logoff se existir
                 if (logoffNavItem) {
                     logoffNavItem.remove();
@@ -395,17 +410,26 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const containerTicketsDepartamento = document.getElementById('containerTicketsDepartamento');
-        if (!containerTicketsDepartamento) return;
+        const containerNovoTicket = document.getElementById('containerNovoTicket'); // Pega o container do card Novo Ticket
 
         const token = localStorage.getItem('token');
         const usuarioString = localStorage.getItem('usuario');
 
         if (token && usuarioString) {
             const usuario = JSON.parse(usuarioString);
-            if (usuario.tipo === 'Atendente') {
-                containerTicketsDepartamento.style.display = 'block'; // Ou 'flex' se o .col precisar
-            } else {
-                containerTicketsDepartamento.style.display = 'none';
+            if (containerTicketsDepartamento) {
+                if (usuario.tipo === 'Atendente') {
+                    containerTicketsDepartamento.style.display = 'block';
+                } else {
+                    containerTicketsDepartamento.style.display = 'none';
+                }
+            }
+            if (containerNovoTicket) {
+                if (usuario.tipo === 'Atendente') {
+                    containerNovoTicket.style.display = 'none'; // Esconde card Novo Ticket para Atendente
+                } else {
+                    containerNovoTicket.style.display = 'block'; // Mostra para Solicitante
+                }
             }
         } else {
             containerTicketsDepartamento.style.display = 'none';
