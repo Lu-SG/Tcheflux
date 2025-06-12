@@ -58,7 +58,7 @@
                 </div>
             </div>
         </div>
-        <div class="col">
+        <div class="col" id="containerMeusTickets">
             <div class="card h-100 text-center shadow-sm">
                 <div class="card-body d-flex flex-column">
                     <h5 class="card-title">Meus Tickets</h5>
@@ -71,8 +71,17 @@
             <div class="card h-100 text-center shadow-sm">
                 <div class="card-body d-flex flex-column">
                     <h5 class="card-title">Tickets do Departamento</h5>
-                    <p class="card-text">Atendentes: visualizem e gerenciem os tickets do seu departamento.</p>
-                    <a href="ticket_departamento.html" class="btn btn-success mt-auto">Ver Tickets do Depto.</a>
+                    <p class="card-text">Visualizem e gerenciem os tickets do seu departamento</p>
+                    <a href="ticket_departamento.html" class="btn btn-success mt-auto">Ver Tickets do Depto</a>
+                </div>
+            </div>
+        </div>
+        <div class="col" id="containerTicketsAtendente" style="display: none;"> <!-- Controlado por JS -->
+            <div class="card h-100 text-center shadow-sm">
+                <div class="card-body d-flex flex-column">
+                    <h5 class="card-title">Tickets do Atendente</h5>
+                    <p class="card-text">Visualizem e gerenciem seus tickets</p>
+                    <a href="ticket_departamento.html" class="btn btn-success mt-auto">Ver Tickets Atendente</a>
                 </div>
             </div>
         </div>

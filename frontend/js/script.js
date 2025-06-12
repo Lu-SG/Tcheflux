@@ -461,6 +461,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const containerTicketsDepartamento = document.getElementById('containerTicketsDepartamento');
         const containerNovoTicket = document.getElementById('containerNovoTicket'); // Pega o container do card Novo Ticket
+        const containerTicketsAtendente = document.getElementById('containerTicketsAtendente');
+        const containerMeusTickets = document.getElementById('containerMeusTickets');
 
         const token = localStorage.getItem('token');
         const usuarioString = localStorage.getItem('usuario');
@@ -474,6 +476,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     containerTicketsDepartamento.style.display = 'none';
                 }
             }
+            if (containerTicketsAtendente) {
+                if (usuario.tipo === 'Atendente') {
+                    containerTicketsAtendente.style.display = 'block';
+                } else {
+                    containerTicketsAtendente.style.display = 'none';
+                }
+            }
+            
             if (containerNovoTicket) {
                 if (usuario.tipo === 'Atendente') {
                     containerNovoTicket.style.display = 'none'; // Esconde card Novo Ticket para Atendente
@@ -481,9 +491,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     containerNovoTicket.style.display = 'block'; // Mostra para Solicitante
                 }
             }
-        } else {
-            containerTicketsDepartamento.style.display = 'none';
-        }
+
+            if (containerMeusTickets) {
+                if (usuario.tipo === 'Atendente') {
+                    containerMeusTickets.style.display = 'none'; // Esconde card Novo Ticket para Atendente
+                } else {
+                    containerMeusTickets.style.display = 'block'; // Mostra para Solicitante
+                }
+            }
+
+        } 
     }
 
     // Executar ao carregar a página
