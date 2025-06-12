@@ -74,7 +74,7 @@ router.get('/meus-tickets', authMiddleware, async (req, res) => {
     try {
         const idSolicitante = req.usuario.id;
         const result = await pool.query(
-            `SELECT t.nro, t.titulo, t.status, t.datainicio, d.areas as departamento_area
+            `SELECT t.nro, t.titulo, t.status, t.datainicio, t.dataatualizacao, d.areas as departamento_area
              FROM ticket t
              JOIN departamento d ON t.coddepto = d.coddepto
              WHERE t.idsolicitante = $1
@@ -101,7 +101,7 @@ router.get('/departamento', authMiddleware, async (req, res) => {
         // Exemplo: buscar tickets abertos ou em andamento do departamento
         // Você pode ajustar os status conforme necessário
         const result = await pool.query(
-            `SELECT t.nro, t.titulo, t.status, t.datainicio, u.nomecompleto as solicitante_nome
+            `SELECT t.nro, t.titulo, t.status, t.datainicio, t.dataatualizacao, u.nomecompleto as solicitante_nome
              FROM ticket t
              JOIN usuario u ON t.idsolicitante = u.idusuario
              WHERE t.coddepto = $1 AND (t.status = 'Aberto' OR t.status = 'Em Andamento')
@@ -131,6 +131,7 @@ router.get('/ticket-atendente', authMiddleware, async (req, res) => {
                 t.titulo, 
                 t.status, 
                 t.datainicio, 
+                t.dataatualizacao,
                 solicitante.nomecompleto AS solicitante_nome, -- Nome do solicitante
                 atendente_info.nomecompleto AS atendente_nome -- Nome do atendente (opcional, já que estamos filtrando por ele)
              FROM ticket t

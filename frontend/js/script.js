@@ -184,6 +184,46 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    function calcularSLA(ticket) {
+        const slaHorasDefinido = 48; // SLA de 48 horas corridas
+        const agora = new Date();
+        const dataInicio = new Date(ticket.datainicio);
+        let textoSLA = 'N/A';
+        let classeCorSLA = 'text-muted'; // Default
+    
+        const msEmUmaHora = 60 * 60 * 1000;
+        const slaMs = slaHorasDefinido * msEmUmaHora;
+        const dataLimiteSLA = new Date(dataInicio.getTime() + slaMs);
+    
+        if (ticket.status === 'Aberto' || ticket.status === 'Em Andamento') {
+            const tempoRestanteMs = dataLimiteSLA - agora;
+            
+            if (tempoRestanteMs <= 0) {
+                const tempoAtrasoMs = Math.abs(tempoRestanteMs);
+                const horasAtraso = Math.floor(tempoAtrasoMs / msEmUmaHora);
+                const minutosAtraso = Math.floor((tempoAtrasoMs % msEmUmaHora) / (60 * 1000));
+                textoSLA = `Atrasado (${horasAtraso}h ${minutosAtraso}m)`;
+                classeCorSLA = 'text-danger fw-bold';
+            } else {
+                const horasRestantes = Math.floor(tempoRestanteMs / msEmUmaHora);
+                const minutosRestantes = Math.floor((tempoRestanteMs % msEmUmaHora) / (60 * 1000));
+                textoSLA = `Restam: ${horasRestantes}h ${minutosRestantes}m`;
+                classeCorSLA = tempoRestanteMs < (slaMs / 4) ? 'text-warning' : 'text-success'; // Menos de 25% do tempo SLA = warning
+            }
+        } else if (ticket.status === 'Resolvido' || ticket.status === 'Fechado') {
+            // Usa dataatualizacao como data de fechamento. Se nula, usa data de início (resultando em tempo 0 se não houve atualização)
+            const dataFim = ticket.dataatualizacao ? new Date(ticket.dataatualizacao) : dataInicio;
+            const tempoGastoMs = dataFim - dataInicio;
+            const horasGastas = Math.floor(tempoGastoMs / msEmUmaHora);
+            const minutosGastos = Math.floor((tempoGastoMs % msEmUmaHora) / (60 * 1000));
+    
+            textoSLA = `Resolvido em: ${horasGastas}h ${minutosGastos}m`;
+            classeCorSLA = tempoGastoMs > slaMs ? 'text-danger' : 'text-primary'; // Se estourou SLA, fica vermelho
+        }
+    
+        return `<span class="${classeCorSLA}">${textoSLA}</span>`;
+    }
+
     // --- Funções para carregar e exibir tickets ---
     async function carregarMeusTickets() {
         const container = document.getElementById('listaMeusTickets');
@@ -230,12 +270,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
             let listHtml = '';
             tickets.forEach(ticket => {
+                const slaInfo = calcularSLA(ticket);
                 listHtml += `
                     <ul class="list-group list-group-horizontal-md mb-2">
                         <li class="list-group-item flex-fill"><strong>Nº:</strong> ${ticket.nro}</li>
                         <li class="list-group-item flex-fill w-25"><strong>Título:</strong> ${ticket.titulo}</li>
                         <li class="list-group-item flex-fill"><strong>Status:</strong> ${ticket.status}</li>
                         <li class="list-group-item flex-fill"><strong>Depto:</strong> ${ticket.departamento_area}</li>
+                        <li class="list-group-item flex-fill"><strong>SLA:</strong> ${slaInfo}</li>
                         <li class="list-group-item flex-fill"><strong>Data:</strong> ${new Date(ticket.datainicio).toLocaleString('pt-BR')}</li>
                     </ul>
                 `;
@@ -293,17 +335,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
             let listHtml = '';
             tickets.forEach(ticket => {
+                const slaInfo = calcularSLA(ticket);
                 listHtml += `
                     <ul class="list-group list-group-horizontal-md mb-2">
                         <li class="list-group-item flex-fill"><strong>Nº:</strong> ${ticket.nro}</li>
                         <li class="list-group-item flex-fill w-25"><strong>Título:</strong> ${ticket.titulo}</li>
                         <li class="list-group-item flex-fill"><strong>Status:</strong> ${ticket.status}</li>
+                        <li class="list-group-item flex-fill"><strong>SLA:</strong> ${slaInfo}</li>
                         <li class="list-group-item flex-fill"><strong>Data:</strong> ${new Date(ticket.datainicio).toLocaleString('pt-BR')}</li>
                     </ul>
                 `;
             });
             container.innerHTML = listHtml;
-
 
         } catch (error) {
             console.error('Erro ao carregar meus tickets:', error);
@@ -363,12 +406,14 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             let listHtml = '';
             tickets.forEach(ticket => {
+                const slaInfo = calcularSLA(ticket);
                 listHtml += `
                     <ul class="list-group list-group-horizontal-md mb-2">
                         <li class="list-group-item flex-fill"><strong>Nº:</strong> ${ticket.nro}</li>
                         <li class="list-group-item flex-fill w-25"><strong>Título:</strong> ${ticket.titulo}</li>
                         <li class="list-group-item flex-fill"><strong>Status:</strong> ${ticket.status}</li>
                         <li class="list-group-item flex-fill"><strong>Solic.:</strong> ${ticket.solicitante_nome}</li>
+                        <li class="list-group-item flex-fill"><strong>SLA:</strong> ${slaInfo}</li>
                         <li class="list-group-item flex-fill"><strong>Data:</strong> ${new Date(ticket.datainicio).toLocaleString('pt-BR')}</li>
                         <li class="list-group-item"><button type="button" class="btn btn-success btn-sm btn-assumir-ticket" data-nro-ticket="${ticket.nro}">Assumir</button></li>
                     </ul>
