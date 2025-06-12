@@ -248,6 +248,69 @@ document.addEventListener('DOMContentLoaded', () => {
             container.innerHTML = `<p class="text-danger">Erro ao carregar seus tickets: ${error.message}</p>`;
         }
     }
+    async function carregarTicketsAtendente() {
+        const container = document.getElementById('listaTicketsAtendente');
+        if (!container) return;
+
+        const token = localStorage.getItem('token');
+        if (!token) {
+            container.innerHTML = '<p class="text-danger">Você precisa estar logado para ver seus tickets. <a href="sign_in.html">Faça login</a>.</p>';
+            return;
+        }
+
+        try {
+            const response = await fetch('http://localhost:3001/api/tickets/meus-tickets', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!response.ok) {
+                if (response.status === 401) {
+                     container.innerHTML = '<p class="text-danger">Sua sessão expirou. <a href="sign_in.html">Faça login novamente</a>.</p>';
+                     localStorage.removeItem('token');
+                     localStorage.removeItem('usuario');
+                } else {
+                    let errorMessageFromServer = `Erro ${response.status}: ${response.statusText}`;
+                    try {
+                        // Tenta ler o corpo da resposta como texto primeiro
+                        const errorText = await response.text();
+                        // Tenta analisar o texto como JSON
+                        const errData = JSON.parse(errorText);
+                        errorMessageFromServer = errData.error || errorMessageFromServer;
+                    } catch (e) {
+                        // Se falhar ao analisar como JSON, o erro original (status + statusText) já é um bom fallback.
+                        console.warn("Não foi possível analisar a resposta de erro como JSON. Status:", response.status, response.statusText);
+                    }
+                    throw new Error(errorMessageFromServer);
+                }
+                return;
+            }
+
+            const tickets = await response.json();
+            if (tickets.length === 0) {
+                container.innerHTML = '<p>Você ainda não registrou nenhum ticket.</p>';
+                return;
+            }
+
+            let listHtml = '';
+            tickets.forEach(ticket => {
+                listHtml += `
+                    <ul class="list-group list-group-horizontal-md mb-2">
+                        <li class="list-group-item flex-fill"><strong>Nº:</strong> ${ticket.nro}</li>
+                        <li class="list-group-item flex-fill w-25"><strong>Título:</strong> ${ticket.titulo}</li>
+                        <li class="list-group-item flex-fill"><strong>Status:</strong> ${ticket.status}</li>
+                        <li class="list-group-item flex-fill"><strong>Depto:</strong> ${ticket.departamento_area}</li>
+                        <li class="list-group-item flex-fill"><strong>Data:</strong> ${new Date(ticket.datainicio).toLocaleString('pt-BR')}</li>
+                    </ul>
+                `;
+            });
+            container.innerHTML = listHtml;
+
+
+        } catch (error) {
+            console.error('Erro ao carregar meus tickets:', error);
+            container.innerHTML = `<p class="text-danger">Erro ao carregar seus tickets: ${error.message}</p>`;
+        }
+    }
 
     async function carregarTicketsDepartamento() {
         const container = document.getElementById('listaTicketsDepartamento');
@@ -515,4 +578,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.location.pathname.endsWith('ticket_departamento.html')) {
         carregarTicketsDepartamento();
     }
+    if (window.location.pathname.endsWith('ticket_atendente.html')) {
+        carregarTicketsAtendente();
+    }
+
+
 });
