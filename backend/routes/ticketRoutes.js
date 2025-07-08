@@ -215,4 +215,96 @@ router.get('/:nro', authMiddleware, async (req, res) => {
         res.status(500).json({ error: 'Erro interno do servidor ao buscar detalhes do ticket.' });
     }
 });
+
+// Rota para ADICIONAR um comentário a um ticket (PUT /api/tickets/:nro/comentario)
+router.put('/:nro/comentario', authMiddleware, async (req, res) => {
+    const { nro } = req.params;
+    const { novoComentario } = req.body;
+    const usuarioLogado = req.usuario; // { id, nome, tipo, email, coddepto? }
+
+    if (!novoComentario || novoComentario.trim() === '') {
+        return res.status(400).json({ error: 'O comentário não pode estar vazio.' });
+    }
+
+    try {
+        const ticketResult = await pool.query('SELECT descricao FROM ticket WHERE nro = $1', [nro]);
+        if (ticketResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Ticket não encontrado.' });
+        }
+
+        const descricaoAtual = ticketResult.rows[0].descricao || ''; // Pega a descrição atual ou string vazia se for null
+
+        // Formatar o novo comentário com data, hora e nome do usuário
+        const timestamp = new Date().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+        const comentarioFormatado = 
+`------------------------------------
+[${timestamp}] ${usuarioLogado.nome} (${usuarioLogado.tipo}):
+${novoComentario.trim()}
+`;
+
+        const novaDescricao = descricaoAtual + comentarioFormatado;
+
+        const updateResult = await pool.query(
+            'UPDATE ticket SET descricao = $1, dataatualizacao = CURRENT_TIMESTAMP WHERE nro = $2 RETURNING *',
+            [novaDescricao, nro]
+        );
+
+        res.json(updateResult.rows[0]);
+    } catch (err) {
+        console.error(`Erro ao adicionar comentário ao ticket ${nro}:`, err);
+        res.status(500).json({ error: 'Erro interno do servidor ao adicionar comentário.' });
+    }
+});
+
+// Rota para ATUALIZAR o status de um ticket (PUT /api/tickets/:nro/status) - Ação do Atendente
+router.put('/:nro/status', authMiddleware, async (req, res) => {
+    const { nro } = req.params;
+    const { novoStatus, comentarioAdicional } = req.body; // Comentário é opcional ao mudar status
+    const usuarioLogado = req.usuario;
+
+    if (usuarioLogado.tipo !== 'Atendente') {
+        return res.status(403).json({ error: 'Apenas atendentes podem alterar o status do ticket.' });
+    }
+
+    if (!novoStatus) {
+        return res.status(400).json({ error: 'O novo status é obrigatório.' });
+    }
+
+    // Validar os status permitidos (opcional, mas bom para consistência)
+    const statusPermitidos = ['Em Andamento', 'Aguardando Resposta', 'Resolvido', 'Fechado']; // Adicione outros se necessário
+    if (!statusPermitidos.includes(novoStatus)) {
+        return res.status(400).json({ error: `Status '${novoStatus}' inválido.` });
+    }
+
+    try {
+        let descricaoAtualizada = '';
+        if (comentarioAdicional && comentarioAdicional.trim() !== '') {
+            const ticketResult = await pool.query('SELECT descricao FROM ticket WHERE nro = $1', [nro]);
+            if (ticketResult.rows.length === 0) { // Verificação extra, embora a atualização abaixo falharia de qualquer forma
+                return res.status(404).json({ error: 'Ticket não encontrado para adicionar comentário.' });
+            }
+            const descricaoAtual = ticketResult.rows[0].descricao || '';
+            const timestamp = new Date().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+            const comentarioFormatado =
+`\n------------------------------------
+[${timestamp}] ${usuarioLogado.nome} (Atendente) atualizou o status para: ${novoStatus}
+Comentário: ${comentarioAdicional.trim()}
+`;
+            descricaoAtualizada = descricaoAtual + comentarioFormatado;
+        }
+
+        const query = comentarioAtualizada ? 'UPDATE ticket SET status = $1, dataatualizacao = CURRENT_TIMESTAMP, descricao = $2 WHERE nro = $3 RETURNING *' : 'UPDATE ticket SET status = $1, dataatualizacao = CURRENT_TIMESTAMP WHERE nro = $2 RETURNING *';
+        const params = comentarioAtualizada ? [novoStatus, descricaoAtualizada, nro] : [novoStatus, nro];
+        const updateResult = await pool.query(query, params);
+
+        if (updateResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Ticket não encontrado para atualizar status.' });
+        }
+        res.json(updateResult.rows[0]);
+    } catch (err) {
+        console.error(`Erro ao atualizar status do ticket ${nro}:`, err);
+        res.status(500).json({ error: 'Erro interno do servidor ao atualizar status.' });
+    }
+});
+
 module.exports = router;

@@ -526,11 +526,159 @@ document.addEventListener('DOMContentLoaded', () => {
             loadingMessage.style.display = 'none';
             ticketDetailContainer.style.display = 'block';
 
+            // Adicionar event listener para o formulário de comentário
+            const formAdicionarComentario = document.getElementById('formAdicionarComentario');
+            if (formAdicionarComentario) {
+                formAdicionarComentario.addEventListener('submit', (event) => handleAdicionarComentario(event, ticket.nro));
+            }
+            // Adicionar event listener para o formulário de atualizar status (Atendente)
+            const formAtualizarStatus = document.getElementById('formAtualizarStatus');
+            if (formAtualizarStatus && usuarioLogado.tipo === 'Atendente') {
+                formAtualizarStatus.addEventListener('submit', (event) => handleAtualizarStatus(event, ticket.nro));
+            }
+
         } catch (error) {
             loadingMessage.style.display = 'none';
             errorMessageDiv.textContent = error.message;
             errorMessageDiv.style.display = 'block';
             console.error('Erro ao carregar detalhes do ticket:', error);
+        }
+    }
+
+    async function handleAdicionarComentario(event, nroTicket) {
+        event.preventDefault();
+        const textareaComentario = document.getElementById('novoComentario');
+        const novoComentario = textareaComentario.value.trim();
+
+        if (!novoComentario) {
+            alert('Por favor, digite um comentário.');
+            return;
+        }
+
+        const token = localStorage.getItem('token');
+        if (!token) {
+            alert('Sua sessão expirou. Faça login novamente.');
+            window.location.href = 'sign_in.html';
+            return;
+        }
+
+        const submitButton = event.target.querySelector('button[type="submit"]');
+        const originalButtonText = submitButton.textContent;
+        submitButton.disabled = true;
+        submitButton.textContent = 'Enviando...';
+
+        try {
+            const response = await fetch(`http://localhost:3001/api/tickets/${nroTicket}/comentario`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ novoComentario })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || `Erro ${response.status} ao adicionar comentário.`);
+            }
+
+            const ticketAtualizado = await response.json();
+            // Atualizar a UI com o novo histórico e data de atualização
+            document.getElementById('ticketDescricaoHistorico').textContent = ticketAtualizado.descricao;
+            document.getElementById('ticketDataAtualizacao').textContent = new Date(ticketAtualizado.dataatualizacao).toLocaleString('pt-BR');
+            document.getElementById('ticketSLA').innerHTML = calcularSLA(ticketAtualizado); // Recalcular SLA
+            textareaComentario.value = ''; // Limpar o campo de comentário
+            alert('Comentário adicionado com sucesso!');
+
+        } catch (error) {
+            console.error('Erro ao adicionar comentário:', error);
+            alert(`Erro ao adicionar comentário: ${error.message}`);
+        } finally {
+            submitButton.disabled = false;
+            submitButton.textContent = originalButtonText;
+        }
+    }
+
+    async function handleAtualizarStatus(event, nroTicket) {
+        event.preventDefault();
+        const selectNovoStatus = document.getElementById('novoStatusTicket');
+        const novoStatus = selectNovoStatus.value;
+        // Opcional: pegar um comentário adicional se você adicionar um campo para isso no formAtualizarStatus
+        // const comentarioAdicional = document.getElementById('comentarioAtualizacaoStatus')?.value.trim();
+
+        if (!novoStatus) {
+            alert('Por favor, selecione um novo status.');
+            return;
+        }
+
+        const token = localStorage.getItem('token');
+        if (!token) {
+            alert('Sua sessão expirou. Faça login novamente.');
+            window.location.href = 'sign_in.html';
+            return;
+        }
+
+        const submitButton = event.target.querySelector('button[type="submit"]');
+        const originalButtonText = submitButton.textContent;
+        submitButton.disabled = true;
+        submitButton.textContent = 'Atualizando...';
+
+        try {
+            const bodyPayload = { novoStatus };
+            // if (comentarioAdicional) {
+            //     bodyPayload.comentarioAdicional = comentarioAdicional;
+            // }
+
+            const fetchUrl = `http://localhost:3001/api/tickets/${nroTicket}/status`;
+            const fetchOptions = {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(bodyPayload)
+            };
+            
+            const response = await fetch(fetchUrl, fetchOptions);
+
+            // Log da resposta bruta para depuração
+            const responseText = await response.clone().text(); // Clonar para ler o corpo múltiplas vezes se necessário
+            console.log('Status da resposta ao atualizar status:', response.status);
+            console.log('Texto da resposta bruta ao atualizar status:', responseText);
+
+            if (!response.ok) {
+                let errorMsg = `Erro ${response.status} ao atualizar status.`;
+                // Tenta obter uma mensagem de erro mais específica se a resposta for JSON
+                if (responseText && response.headers.get("content-type")?.includes("application/json")) {
+                    try {
+                        const errorData = JSON.parse(responseText); // Usa o texto já lido
+                        errorMsg = errorData.error || errorMsg;
+                    } catch (e) {
+                        console.warn("Não foi possível analisar a resposta de erro como JSON (atualizar status), embora o content-type indicasse JSON:", e);
+                        errorMsg += ` Resposta do servidor (início): ${responseText.substring(0, 100)}...`;
+                    }
+                } else if (responseText) {
+                     errorMsg += ` Resposta do servidor (início): ${responseText.substring(0, 100)}...`;
+                }
+                throw new Error(errorMsg);
+            }
+
+            const ticketAtualizado = await response.json();
+            // Atualizar a UI
+            document.getElementById('ticketStatus').textContent = ticketAtualizado.status;
+            document.getElementById('ticketStatus').className = `badge bg-${getStatusColor(ticketAtualizado.status)}`;
+            document.getElementById('ticketDataAtualizacao').textContent = new Date(ticketAtualizado.dataatualizacao).toLocaleString('pt-BR');
+            document.getElementById('ticketSLA').innerHTML = calcularSLA(ticketAtualizado);
+            if (ticketAtualizado.descricao && ticketAtualizado.descricao !== document.getElementById('ticketDescricaoHistorico').textContent) {
+                document.getElementById('ticketDescricaoHistorico').textContent = ticketAtualizado.descricao;
+            }
+            alert('Status do ticket atualizado com sucesso!');
+        } catch (error) {
+            console.error('Erro ao atualizar status:', error);
+            alert(`Erro ao atualizar status: ${error.message}`);
+        } finally {
+            submitButton.disabled = false;
+            submitButton.textContent = originalButtonText;
         }
     }
 
