@@ -159,24 +159,33 @@ router.put('/:nro/assumir', authMiddleware, async (req, res) => {
     }
 
     try {
-        // Verificar o status atual do ticket e se ele não tem um atendente
-        const ticketResult = await pool.query('SELECT status, idatendente FROM ticket WHERE nro = $1', [nro]);
+        // Verificar o status atual do ticket, se ele não tem um atendente e pegar a descrição
+        const ticketResult = await pool.query('SELECT status, idatendente, descricao FROM ticket WHERE nro = $1', [nro]);
 
         if (ticketResult.rows.length === 0) {
             return res.status(404).json({ error: 'Ticket não encontrado.' });
         }
 
         const ticketAtual = ticketResult.rows[0];
+        const descricaoAtual = ticketAtual.descricao || '';
 
         if (ticketAtual.status !== 'Aberto') {
             return res.status(400).json({ error: `Este ticket não está "Aberto". Status atual: ${ticketAtual.status}.` });
         }
 
+        // Criar a entrada de log para a descrição
+        const timestamp = new Date().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+        const comentarioFormatado = 
+`\n------------------------------------
+[${timestamp}] ${req.usuario.nome} (Atendente) assumiu o ticket. Status alterado para: Em Andamento.
+`;
+        const novaDescricao = descricaoAtual + comentarioFormatado;
+
         // Atualizar o ticket: definir status para 'Em Andamento' e atribuir o idatendente
         const updatedTicket = await pool.query(
-            `UPDATE ticket SET status = 'Em Andamento', idatendente = $1, dataAtualizacao = CURRENT_TIMESTAMP 
-             WHERE nro = $2 RETURNING *`,
-            [idAtendente, nro]
+            `UPDATE ticket SET status = 'Em Andamento', idatendente = $1, dataAtualizacao = CURRENT_TIMESTAMP, descricao = $2 
+             WHERE nro = $3 RETURNING *`,
+            [idAtendente, novaDescricao, nro]
         );
 
         res.json(updatedTicket.rows[0]);
@@ -298,24 +307,33 @@ router.put('/:nro/status', authMiddleware, async (req, res) => {
         }
         // Se for Atendente, a lógica continua como antes (pode alterar para os status permitidos).
 
-        let descricaoAtualizada = '';
-        if (comentarioAdicional && comentarioAdicional.trim() !== '') {
-            const ticketResult = await pool.query('SELECT descricao FROM ticket WHERE nro = $1', [nro]);
-            if (ticketResult.rows.length === 0) { // Verificação extra, embora a atualização abaixo falharia de qualquer forma
-                return res.status(404).json({ error: 'Ticket não encontrado para adicionar comentário.' });
+        // Sempre vamos adicionar uma entrada no histórico ao mudar o status
+        const ticketDescResult = await pool.query('SELECT descricao FROM ticket WHERE nro = $1', [nro]);
+        const descricaoAtual = ticketDescResult.rows[0]?.descricao || '';
+
+        const timestamp = new Date().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+        
+        let logMessage = '';
+        if (usuarioLogado.tipo === 'Solicitante') {
+            if (novoStatus === 'Fechado') {
+                logMessage = `[${timestamp}] ${usuarioLogado.nome} (Solicitante) aprovou a solução. Status alterado para: Fechado.`;
+            } else if (novoStatus === 'Pendente Cliente') {
+                logMessage = `[${timestamp}] ${usuarioLogado.nome} (Solicitante) reprovou a solução. Status alterado para: Pendente Cliente.`;
             }
-            const descricaoAtual = ticketResult.rows[0].descricao || '';
-            const timestamp = new Date().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-            const comentarioFormatado =
-`\n------------------------------------
-[${timestamp}] ${usuarioLogado.nome} (Atendente) atualizou o status para: ${novoStatus}
-Comentário: ${comentarioAdicional.trim()}
-`;
-            descricaoAtualizada = descricaoAtual + comentarioFormatado;
+        } else { // Para Atendentes
+            logMessage = `[${timestamp}] ${usuarioLogado.nome} (${usuarioLogado.tipo}) atualizou o status para: ${novoStatus}`;
+        }
+        
+        // Se houver um comentário adicional (ex: motivo da reprovação), adiciona ao log
+        if (comentarioAdicional && comentarioAdicional.trim() !== '') {
+            logMessage += `\nComentário: ${comentarioAdicional.trim()}`;
         }
 
-        const query = descricaoAtualizada ? 'UPDATE ticket SET status = $1, dataAtualizacao = CURRENT_TIMESTAMP, descricao = $2 WHERE nro = $3 RETURNING *' : 'UPDATE ticket SET status = $1, dataAtualizacao = CURRENT_TIMESTAMP WHERE nro = $2 RETURNING *';
-        const params = descricaoAtualizada ? [novoStatus, descricaoAtualizada, nro] : [novoStatus, nro];
+        const comentarioFormatado = `\n------------------------------------\n${logMessage}\n`;
+        const descricaoAtualizada = descricaoAtual + comentarioFormatado;
+
+        const query = 'UPDATE ticket SET status = $1, dataAtualizacao = CURRENT_TIMESTAMP, descricao = $2 WHERE nro = $3 RETURNING *';
+        const params = [novoStatus, descricaoAtualizada, nro];
         const updateResult = await pool.query(query, params);
 
         if (updateResult.rows.length === 0) {
