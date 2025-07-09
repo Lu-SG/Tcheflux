@@ -531,10 +531,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (formAdicionarComentario) {
                 formAdicionarComentario.addEventListener('submit', (event) => handleAdicionarComentario(event, ticket.nro));
             }
-            // Adicionar event listener para o formulário de atualizar status (Atendente)
-            const formAtualizarStatus = document.getElementById('formAtualizarStatus');
-            if (formAtualizarStatus && usuarioLogado.tipo === 'Atendente') {
-                formAtualizarStatus.addEventListener('submit', (event) => handleAtualizarStatus(event, ticket.nro));
+            // Adicionar event listener para o novo botão de enviar para revisão (Atendente)
+            const btnEnviarRevisao = document.getElementById('btnEnviarRevisao');
+            if (btnEnviarRevisao && usuarioLogado.tipo === 'Atendente') {
+                btnEnviarRevisao.addEventListener('click', () => handleEnviarParaRevisao(ticket.nro));
             }
 
         } catch (error) {
@@ -599,36 +599,23 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    async function handleAtualizarStatus(event, nroTicket) {
-        event.preventDefault();
-        const selectNovoStatus = document.getElementById('novoStatusTicket');
-        const novoStatus = selectNovoStatus.value;
-        // Opcional: pegar um comentário adicional se você adicionar um campo para isso no formAtualizarStatus
-        // const comentarioAdicional = document.getElementById('comentarioAtualizacaoStatus')?.value.trim();
-
-        if (!novoStatus) {
-            alert('Por favor, selecione um novo status.');
-            return;
-        }
-
+    async function handleEnviarParaRevisao(nroTicket) {
         const token = localStorage.getItem('token');
         if (!token) {
             alert('Sua sessão expirou. Faça login novamente.');
             window.location.href = 'sign_in.html';
             return;
         }
-
-        const submitButton = event.target.querySelector('button[type="submit"]');
-        const originalButtonText = submitButton.textContent;
-        submitButton.disabled = true;
-        submitButton.textContent = 'Atualizando...';
+        
+        const botao = document.getElementById('btnEnviarRevisao');
+        const originalButtonText = botao.textContent;
+        botao.disabled = true;
+        botao.textContent = 'Enviando...';
 
         try {
-            const bodyPayload = { novoStatus };
-            // if (comentarioAdicional) {
-            //     bodyPayload.comentarioAdicional = comentarioAdicional;
-            // }
-
+            // O status é fixo: "Resolvido"
+            const bodyPayload = { novoStatus: 'Resolvido' };
+            
             const fetchUrl = `http://localhost:3001/api/tickets/${nroTicket}/status`;
             const fetchOptions = {
                 method: 'PUT',
@@ -638,27 +625,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 },
                 body: JSON.stringify(bodyPayload)
             };
-            
+
             const response = await fetch(fetchUrl, fetchOptions);
 
-            // Log da resposta bruta para depuração
-            const responseText = await response.clone().text(); // Clonar para ler o corpo múltiplas vezes se necessário
-            console.log('Status da resposta ao atualizar status:', response.status);
-            console.log('Texto da resposta bruta ao atualizar status:', responseText);
-
             if (!response.ok) {
+                const responseText = await response.text();
                 let errorMsg = `Erro ${response.status} ao atualizar status.`;
-                // Tenta obter uma mensagem de erro mais específica se a resposta for JSON
-                if (responseText && response.headers.get("content-type")?.includes("application/json")) {
-                    try {
-                        const errorData = JSON.parse(responseText); // Usa o texto já lido
-                        errorMsg = errorData.error || errorMsg;
-                    } catch (e) {
-                        console.warn("Não foi possível analisar a resposta de erro como JSON (atualizar status), embora o content-type indicasse JSON:", e);
-                        errorMsg += ` Resposta do servidor (início): ${responseText.substring(0, 100)}...`;
-                    }
-                } else if (responseText) {
-                     errorMsg += ` Resposta do servidor (início): ${responseText.substring(0, 100)}...`;
+                try {
+                    const errorData = JSON.parse(responseText);
+                    errorMsg = errorData.error || errorMsg;
+                } catch (e) {
+                    console.warn("Não foi possível analisar a resposta de erro como JSON (enviar para revisão).");
                 }
                 throw new Error(errorMsg);
             }
@@ -667,7 +644,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Atualizar a UI
             document.getElementById('ticketStatus').textContent = ticketAtualizado.status;
             document.getElementById('ticketStatus').className = `badge bg-${getStatusColor(ticketAtualizado.status)}`;
-            document.getElementById('ticketDataAtualizacao').textContent = new Date(ticketAtualizado.dataatualizacao).toLocaleString('pt-BR');
+            document.getElementById('ticketDataAtualizacao').textContent = new Date(ticketAtualizado.dataAtualizacao).toLocaleString('pt-BR');
             document.getElementById('ticketSLA').innerHTML = calcularSLA(ticketAtualizado);
             if (ticketAtualizado.descricao && ticketAtualizado.descricao !== document.getElementById('ticketDescricaoHistorico').textContent) {
                 document.getElementById('ticketDescricaoHistorico').textContent = ticketAtualizado.descricao;
@@ -677,11 +654,10 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('Erro ao atualizar status:', error);
             alert(`Erro ao atualizar status: ${error.message}`);
         } finally {
-            submitButton.disabled = false;
-            submitButton.textContent = originalButtonText;
+            botao.disabled = false;
+            botao.textContent = originalButtonText;
         }
     }
-
     // --- Funções de Proteção de Página e Atualização da UI ---
     function protegerPaginas() {
         const path = window.location.pathname;

@@ -174,7 +174,7 @@ router.put('/:nro/assumir', authMiddleware, async (req, res) => {
 
         // Atualizar o ticket: definir status para 'Em Andamento' e atribuir o idatendente
         const updatedTicket = await pool.query(
-            `UPDATE ticket SET status = 'Em Andamento', idatendente = $1, dataAtualizacao = CURRENT_TIMESTAMP 
+            `UPDATE ticket SET status = 'Em Andamento', idatendente = $1, dataatualizacao = CURRENT_TIMESTAMP 
              WHERE nro = $2 RETURNING *`,
             [idAtendente, nro]
         );
@@ -293,8 +293,8 @@ Comentário: ${comentarioAdicional.trim()}
             descricaoAtualizada = descricaoAtual + comentarioFormatado;
         }
 
-        const query = comentarioAtualizada ? 'UPDATE ticket SET status = $1, dataatualizacao = CURRENT_TIMESTAMP, descricao = $2 WHERE nro = $3 RETURNING *' : 'UPDATE ticket SET status = $1, dataatualizacao = CURRENT_TIMESTAMP WHERE nro = $2 RETURNING *';
-        const params = comentarioAtualizada ? [novoStatus, descricaoAtualizada, nro] : [novoStatus, nro];
+        const query = descricaoAtualizada ? 'UPDATE ticket SET status = $1, dataatualizacao = CURRENT_TIMESTAMP, descricao = $2 WHERE nro = $3 RETURNING *' : 'UPDATE ticket SET status = $1, dataatualizacao = CURRENT_TIMESTAMP WHERE nro = $2 RETURNING *';
+        const params = descricaoAtualizada ? [novoStatus, descricaoAtualizada, nro] : [novoStatus, nro];
         const updateResult = await pool.query(query, params);
 
         if (updateResult.rows.length === 0) {
