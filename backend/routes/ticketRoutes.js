@@ -104,7 +104,7 @@ router.get('/departamento', authMiddleware, async (req, res) => {
             `SELECT t.nro, t.titulo, t.status, t.datainicio, t.dataatualizacao, u.nomecompleto as solicitante_nome
              FROM ticket t
              JOIN usuario u ON t.idsolicitante = u.idusuario
-             WHERE t.coddepto = $1 AND (t.status = 'Aberto' OR t.status = 'Em Andamento')
+             WHERE t.coddepto = $1 AND (t.status = 'Aberto' OR t.status = 'Em Andamento' OR t.status = 'Pendente Cliente')
              ORDER BY t.datainicio ASC`, // Mais antigos primeiro para atendimento
             [codDeptoAtendente]
         );
@@ -174,7 +174,7 @@ router.put('/:nro/assumir', authMiddleware, async (req, res) => {
 
         // Atualizar o ticket: definir status para 'Em Andamento' e atribuir o idatendente
         const updatedTicket = await pool.query(
-            `UPDATE ticket SET status = 'Em Andamento', idatendente = $1, dataatualizacao = CURRENT_TIMESTAMP 
+            `UPDATE ticket SET status = 'Em Andamento', idatendente = $1, dataAtualizacao = CURRENT_TIMESTAMP 
              WHERE nro = $2 RETURNING *`,
             [idAtendente, nro]
         );
@@ -245,7 +245,7 @@ ${novoComentario.trim()}
         const novaDescricao = descricaoAtual + comentarioFormatado;
 
         const updateResult = await pool.query(
-            'UPDATE ticket SET descricao = $1, dataatualizacao = CURRENT_TIMESTAMP WHERE nro = $2 RETURNING *',
+            'UPDATE ticket SET descricao = $1, dataAtualizacao = CURRENT_TIMESTAMP WHERE nro = $2 RETURNING *',
             [novaDescricao, nro]
         );
 
@@ -262,21 +262,42 @@ router.put('/:nro/status', authMiddleware, async (req, res) => {
     const { novoStatus, comentarioAdicional } = req.body; // Comentário é opcional ao mudar status
     const usuarioLogado = req.usuario;
 
-    if (usuarioLogado.tipo !== 'Atendente') {
-        return res.status(403).json({ error: 'Apenas atendentes podem alterar o status do ticket.' });
-    }
-
     if (!novoStatus) {
         return res.status(400).json({ error: 'O novo status é obrigatório.' });
     }
 
     // Validar os status permitidos (opcional, mas bom para consistência)
-    const statusPermitidos = ['Em Andamento', 'Aguardando Resposta', 'Resolvido', 'Fechado']; // Adicione outros se necessário
+    const statusPermitidos = ['Em Andamento', 'Aguardando Resposta', 'Resolvido', 'Fechado', 'Pendente Cliente']; // Adicionado 'Pendente Cliente'
     if (!statusPermitidos.includes(novoStatus)) {
         return res.status(400).json({ error: `Status '${novoStatus}' inválido.` });
     }
 
     try {
+        // Buscar o ticket para validar as permissões de mudança de status
+        const ticketResult = await pool.query('SELECT status, idsolicitante FROM ticket WHERE nro = $1', [nro]);
+        if (ticketResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Ticket não encontrado.' });
+        }
+        const ticketAtual = ticketResult.rows[0];
+
+        // Lógica de permissão
+        if (usuarioLogado.tipo === 'Solicitante') {
+            // Solicitante só pode aprovar (Fechar) ou reprovar (Pendente Cliente) um ticket 'Resolvido' que seja seu.
+            if (ticketAtual.idsolicitante !== usuarioLogado.id) {
+                return res.status(403).json({ error: 'Você não tem permissão para alterar este ticket.' });
+            }
+            if (ticketAtual.status !== 'Resolvido') {
+                return res.status(400).json({ error: `Ação não permitida. O ticket precisa estar com status 'Resolvido', mas está '${ticketAtual.status}'.` });
+            }
+            if (novoStatus !== 'Fechado' && novoStatus !== 'Pendente Cliente') {
+                return res.status(403).json({ error: `Como solicitante, você só pode definir o status para 'Fechado' ou 'Pendente Cliente'.` });
+            }
+        } else if (usuarioLogado.tipo !== 'Atendente') {
+            // Se não for nem Solicitante nem Atendente, nega.
+            return res.status(403).json({ error: 'Você não tem permissão para alterar o status de tickets.' });
+        }
+        // Se for Atendente, a lógica continua como antes (pode alterar para os status permitidos).
+
         let descricaoAtualizada = '';
         if (comentarioAdicional && comentarioAdicional.trim() !== '') {
             const ticketResult = await pool.query('SELECT descricao FROM ticket WHERE nro = $1', [nro]);
@@ -293,7 +314,7 @@ Comentário: ${comentarioAdicional.trim()}
             descricaoAtualizada = descricaoAtual + comentarioFormatado;
         }
 
-        const query = descricaoAtualizada ? 'UPDATE ticket SET status = $1, dataatualizacao = CURRENT_TIMESTAMP, descricao = $2 WHERE nro = $3 RETURNING *' : 'UPDATE ticket SET status = $1, dataatualizacao = CURRENT_TIMESTAMP WHERE nro = $2 RETURNING *';
+        const query = descricaoAtualizada ? 'UPDATE ticket SET status = $1, dataAtualizacao = CURRENT_TIMESTAMP, descricao = $2 WHERE nro = $3 RETURNING *' : 'UPDATE ticket SET status = $1, dataAtualizacao = CURRENT_TIMESTAMP WHERE nro = $2 RETURNING *';
         const params = descricaoAtualizada ? [novoStatus, descricaoAtualizada, nro] : [novoStatus, nro];
         const updateResult = await pool.query(query, params);
 

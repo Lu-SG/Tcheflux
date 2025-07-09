@@ -194,7 +194,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const msEmUmaHora = 60 * 60 * 1000;
         const slaMs = slaHorasDefinido * msEmUmaHora;
         const dataLimiteSLA = new Date(dataInicio.getTime() + slaMs);
-    
+
         if (ticket.status === 'Aberto' || ticket.status === 'Em Andamento') {
             const tempoRestanteMs = dataLimiteSLA - agora;
             
@@ -216,11 +216,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const tempoGastoMs = dataFim - dataInicio;
             const horasGastas = Math.floor(tempoGastoMs / msEmUmaHora);
             const minutosGastos = Math.floor((tempoGastoMs % msEmUmaHora) / (60 * 1000));
-    
+
             textoSLA = `Resolvido em: ${horasGastas}h ${minutosGastos}m`;
             classeCorSLA = tempoGastoMs > slaMs ? 'text-danger' : 'text-primary'; // Se estourou SLA, fica vermelho
+        } else if (ticket.status === 'Pendente Cliente') {
+            textoSLA = 'Pausado (Aguardando Ação)';
+            classeCorSLA = 'text-info';
         }
-    
+
         return `<span class="${classeCorSLA}">${textoSLA}</span>`;
     }
 
@@ -264,7 +267,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const tickets = await response.json();
             if (tickets.length === 0) {
-                container.innerHTML = '<p>Você ainda não registrou nenhum ticket.</p>';
+                container.innerHTML = '<p>Não há tickets atribuídos a você no momento.</p>';
                 return;
             }
 
@@ -278,7 +281,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <h5 class="mb-1">#${ticket.nro} - ${ticket.titulo}</h5>
                             <small>Data: ${new Date(ticket.datainicio).toLocaleString('pt-BR')}</small>
                         </div>
-                        <p class="mb-1">Status: ${ticket.status} | Depto: ${ticket.departamento_area}</p>
+                        <p class="mb-1">Status: ${getDisplayStatus(ticket.status)} | Depto: ${ticket.departamento_area}</p>
                         <small>SLA: ${slaInfo}</small>
                     </a>
                 `;
@@ -344,7 +347,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <h5 class="mb-1">#${ticket.nro} - ${ticket.titulo}</h5>
                             <small>Data: ${new Date(ticket.datainicio).toLocaleString('pt-BR')}</small>
                         </div>
-                        <p class="mb-1">Status: ${ticket.status}</p>
+                        <p class="mb-1">Status: ${getDisplayStatus(ticket.status)}</p>
                         <small>SLA: ${slaInfo}</small>
                     </a>
                 `;
@@ -352,8 +355,8 @@ document.addEventListener('DOMContentLoaded', () => {
             container.innerHTML = listHtml;
 
         } catch (error) {
-            console.error('Erro ao carregar meus tickets:', error);
-            container.innerHTML = `<p class="text-danger">Erro ao carregar seus tickets: ${error.message}</p>`;
+            console.error('Erro ao carregar tickets do atendente:', error);
+            container.innerHTML = `<p class="text-danger">Erro ao carregar seus tickets atribuídos: ${error.message}</p>`;
         }
     }
 
@@ -419,7 +422,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             </a>
                             <button type="button" class="btn btn-success btn-sm btn-assumir-ticket ms-2" data-nro-ticket="${ticket.nro}" style="${ticket.status !== 'Aberto' ? 'display:none;' : ''}">Assumir</button>
                         </div>
-                        <p class="mb-1">Solicitante: ${ticket.solicitante_nome} | Status: ${ticket.status}</p>
+                        <p class="mb-1">Solicitante: ${ticket.solicitante_nome} | Status: ${getDisplayStatus(ticket.status)}</p>
                         <small>Data: ${new Date(ticket.datainicio).toLocaleString('pt-BR')} | SLA: ${slaInfo}</small>
                     </div>
                 `;
@@ -488,7 +491,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('ticketTituloPrincipal').textContent = `Ticket #${ticket.nro} - ${ticket.titulo}`;
             
             const statusSpan = document.getElementById('ticketStatus');
-            statusSpan.textContent = ticket.status;
+            statusSpan.textContent = getDisplayStatus(ticket.status); // Usa a função para traduzir o status
             statusSpan.className = `badge bg-${getStatusColor(ticket.status)}`; // Função auxiliar para cor do status
 
             document.getElementById('ticketSolicitante').textContent = `${ticket.solicitante_nome} (${ticket.solicitante_email})`;
@@ -537,6 +540,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 btnEnviarRevisao.addEventListener('click', () => handleEnviarParaRevisao(ticket.nro));
             }
 
+            // Adicionar event listeners para os botões do solicitante
+            if (btnAprovar && usuarioLogado.id === ticket.idsolicitante) {
+                btnAprovar.addEventListener('click', () => handleAprovarTicket(ticket.nro));
+            }
+
+            if (btnReprovar && usuarioLogado.id === ticket.idsolicitante) {
+                // O status enviado será 'Pendente Cliente'
+                btnReprovar.addEventListener('click', () => handleReprovarTicket(ticket.nro));
+            }
+
         } catch (error) {
             loadingMessage.style.display = 'none';
             errorMessageDiv.textContent = error.message;
@@ -561,7 +574,7 @@ document.addEventListener('DOMContentLoaded', () => {
             window.location.href = 'sign_in.html';
             return;
         }
-
+ 
         const submitButton = event.target.querySelector('button[type="submit"]');
         const originalButtonText = submitButton.textContent;
         submitButton.disabled = true;
@@ -644,7 +657,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Atualizar a UI
             document.getElementById('ticketStatus').textContent = ticketAtualizado.status;
             document.getElementById('ticketStatus').className = `badge bg-${getStatusColor(ticketAtualizado.status)}`;
-            document.getElementById('ticketDataAtualizacao').textContent = new Date(ticketAtualizado.dataAtualizacao).toLocaleString('pt-BR');
+            document.getElementById('ticketDataAtualizacao').textContent = new Date(ticketAtualizado.dataatualizacao).toLocaleString('pt-BR');
             document.getElementById('ticketSLA').innerHTML = calcularSLA(ticketAtualizado);
             if (ticketAtualizado.descricao && ticketAtualizado.descricao !== document.getElementById('ticketDescricaoHistorico').textContent) {
                 document.getElementById('ticketDescricaoHistorico').textContent = ticketAtualizado.descricao;
@@ -658,6 +671,107 @@ document.addEventListener('DOMContentLoaded', () => {
             botao.textContent = originalButtonText;
         }
     }
+
+    async function handleAprovarTicket(nroTicket) {
+        if (!confirm('Tem certeza que deseja aprovar a solução e fechar este ticket? Esta ação não pode ser desfeita.')) {
+            return;
+        }
+        await atualizarStatusSolicitante(nroTicket, 'Fechado', document.getElementById('btnAprovarTicket'));
+    }
+
+    async function handleReprovarTicket(nroTicket) {
+        if (!confirm('Tem certeza que deseja reprovar a solução e reabrir o ticket para o atendente?')) {
+            return;
+        }
+        // Conforme solicitado, o status enviado ao backend é 'Pendente Cliente'
+        await atualizarStatusSolicitante(nroTicket, 'Pendente Cliente', document.getElementById('btnReprovarTicket'));
+    }
+
+    async function atualizarStatusSolicitante(nroTicket, novoStatus, botao) {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            alert('Sua sessão expirou. Faça login novamente.');
+            window.location.href = 'sign_in.html';
+            return;
+        }
+
+        const originalButtonText = botao.textContent;
+        botao.disabled = true;
+        botao.textContent = 'Processando...';
+
+        // Desabilitar o outro botão também para evitar cliques duplos
+        const outroBotaoId = botao.id === 'btnAprovarTicket' ? 'btnReprovarTicket' : 'btnAprovarTicket';
+        const outroBotao = document.getElementById(outroBotaoId);
+        if (outroBotao) outroBotao.disabled = true;
+
+        try {
+            const response = await fetch(`http://localhost:3001/api/tickets/${nroTicket}/status`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ novoStatus })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || `Erro ${response.status} ao processar a ação.`);
+            }
+
+            const ticketAtualizado = await response.json();
+            
+            // Atualizar a UI
+            const statusSpan = document.getElementById('ticketStatus');
+            
+            if (novoStatus === 'Pendente Cliente') {
+                // Lógica especial para 'Reprovar'
+                statusSpan.textContent = 'Reprovado (Aguardando Atendente)';
+                statusSpan.className = 'badge bg-danger'; // Vermelho para reprovado
+                alert('Solução reprovada. O ticket foi reaberto para o atendente.');
+            } else {
+                // Lógica para 'Aprovar'
+                statusSpan.textContent = ticketAtualizado.status;
+                statusSpan.className = `badge bg-${getStatusColor(ticketAtualizado.status)}`;
+                alert('Ticket aprovado e fechado com sucesso!');
+            }
+
+            document.getElementById('ticketDataAtualizacao').textContent = new Date(ticketAtualizado.dataatualizacao).toLocaleString('pt-BR');
+            document.getElementById('ticketSLA').innerHTML = calcularSLA(ticketAtualizado);
+
+            // Esconder os botões de ação do solicitante após a ação
+            document.getElementById('btnAprovarTicket').style.display = 'none';
+            document.getElementById('btnReprovarTicket').style.display = 'none';
+
+        } catch (error) {
+            console.error('Erro ao processar ação do solicitante:', error);
+            alert(`Erro: ${error.message}`);
+            // Reabilitar botões em caso de erro
+            botao.disabled = false;
+            botao.textContent = originalButtonText;
+            if (outroBotao) outroBotao.disabled = false;
+        }
+    }
+
+    function getDisplayStatus(status) {
+        if (status === 'Pendente Cliente') {
+            return 'Reprovado (Aguardando Atendente)';
+        }
+        return status;
+    }
+
+    function getStatusColor(status) {
+        switch (status) {
+            case 'Aberto': return 'primary';
+            case 'Em Andamento': return 'info';
+            case 'Resolvido': return 'success';
+            case 'Fechado': return 'secondary';
+            case 'Aguardando Resposta': return 'warning';
+            case 'Pendente Cliente': return 'danger'; // Cor para o status real
+            default: return 'light';
+        }
+    }
+
     // --- Funções de Proteção de Página e Atualização da UI ---
     function protegerPaginas() {
         const path = window.location.pathname;
@@ -841,16 +955,6 @@ document.addEventListener('DOMContentLoaded', () => {
         } 
     }
 
-    function getStatusColor(status) {
-        switch (status) {
-            case 'Aberto': return 'primary';
-            case 'Em Andamento': return 'info';
-            case 'Resolvido': return 'success';
-            case 'Fechado': return 'secondary';
-            case 'Aguardando Resposta': return 'warning';
-            default: return 'light';
-        }
-    }
     // Executar ao carregar a página
     protegerPaginas(); 
     atualizarNavbar();
